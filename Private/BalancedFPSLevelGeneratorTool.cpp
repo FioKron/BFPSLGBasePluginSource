@@ -14,7 +14,12 @@
 #include "Runtime/Engine/Classes/Engine/PointLight.h"
 #include "Runtime/Core/Public//Math/UnrealMathUtility.h"
 #include "Runtime/Core/Public/HAL/Platform.h"
+
+// For pseudo-random number generation:
 #include "random"
+#include "time.h"
+
+// Bespoke header files:
 
 #include "Zone.h"
 
@@ -396,9 +401,16 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	}
 
 	// For the chosen Zone-index (pseudo-randomly chosen):	
-	FMath::RandInit(time_t(null));
-	FMath::Rand(); // Flush the rand stream.
-	int ZoneChoice = FMath::RandRange(0, ZoneSubSet.Num() - 1);
+	std::default_random_engine RNG;
+	std::uniform_int_distribution<int> RandomDistribution(0, ZoneSubSet.Num() - 1);
+
+	// Seed the RNG before using it:
+	RNG.seed(time(NULL));
+
+	// Make a call to 'flush' the stream before using it as well as seeding it:
+	RandomDistribution(RNG);
+
+	int ZoneChoice = RandomDistribution(RNG);
 	
 	// Return the Blueprint that represents this Zone:
 	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZoneTiles.Num(); ZoneBlueprintIterator++)
