@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "BaseEditorTool.h"
+
+// Bespoke header files:
+#include "Zone.h"
+
 #include "BalancedFPSLevelGeneratorTool.generated.h"
 
 /**
@@ -74,6 +78,10 @@ private:
 	/** For determining which tile to use. */
 	class UBlueprint* GetSuitableZoneTile(FVector2D CurrentPlacementPosition, TArray<class AZone*> LevelZoneTiles);
 
+	/** For getting an index of the Zone to use. */
+	int GetZoneChoiceIndex(TArray<AZone*>& ZoneSubsetReference,
+		std::vector<UFPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference);
+
 	// Properties:
 
 	/** The default scale for the panels of the level. */
@@ -104,4 +112,30 @@ private:
 	const float DEFAULT_TILE_WIDTH = 100.0f;
 	const float DEFAULT_TILE_HEIGHT = 100.0f;
 	const float DEFAULT_TILE_DEPTH = 10.0f;
+
+	// Used in comparison between a Zone's Edges: 
+	
+	/** Blue against another. */
+	const int BLUE_TO_BLUE = 82;
+	const int BLUE_TO_GREEN = 6;
+	const int BLUE_TO_RED = 6;
+	const int BLUE_TO_GREY = 6;
+
+	/** Green against another. */
+	const int GREEN_TO_BLUE = 6;
+	const int GREEN_TO_GREEN = 14;
+	const int GREEN_TO_RED = 35;
+	const int GREEN_TO_GREY = 45;
+
+	/** Red against another. */
+	const int RED_TO_BLUE = 6;
+	const int RED_TO_GREEN = 10;
+	const int RED_TO_RED = 24;
+	const int RED_TO_GREY = 60;
+
+	/** Grey against another. */
+	const int GREY_TO_BLUE = 6;
+	const int GREY_TO_GREEN = 6;
+	const int GREY_TO_RED = 6;
+	const int GREY_TO_GREY = 82;
 };

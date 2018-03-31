@@ -19,9 +19,6 @@
 #include "random"
 #include "time.h"
 
-// Bespoke header files:
-
-#include "Zone.h"
 
 // Initialise:
 UBalancedFPSLevelGeneratorTool::UBalancedFPSLevelGeneratorTool()
@@ -235,7 +232,6 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 		// Initialise here as well:
 		LevelZones.Add(Cast<AZone, AActor>(ActorZones[ActorZonesCounter]));
 		LevelZones[ActorZonesCounter]->InitialiseZone();
-		LevelZones[ActorZonesCounter]->UpdateEdges();
 	}
 
 	// The main loop to place the zones:
@@ -278,21 +274,23 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D CurrentPlacementPosition, TArray<AZone*> LevelZoneTiles)
 {
 	/**
-	* The 'edge' colours to match a Zone against, to find a suitable Zone for this CurrentPlacementPosition.
-	* Area 'edge' order:
-	* First element: North 'edge'.
-	* Second element: East 'edge'.
-	* Third element: South 'edge'.
-	* Fourth element: West 'edge'.
+	* The Edge colours to match a Zone against, to find a suitable Zone for this CurrentPlacementPosition.
+	* Zone Edge order:
+	* First element: North Edge.
+	* Second element: East Edge.
+	* Third element: South Edge.
+	* Fourth element: West Edge.
 	*/
-	std::vector<AZone::EdgeColour> TargetEdgeColours = std::vector<AZone::EdgeColour>(size_t(4));
-
-	// USE THE STD LIB RANDOM NUMBER GENERATION STREAM FGIahwIGHWAPU
+	std::vector<UFPSLevelGeneratorEdge::EdgeColour> TargetEdgeColours = std::vector<UFPSLevelGeneratorEdge::EdgeColour>(size_t(4));
 
 	// The Zone sub-set to choose a Zone-tile from:
 	TArray<AZone*> ZoneSubSet;
 	// Make sure the sub-set is clear (so as to not chooose an invalid zone):
 	ZoneSubSet.Empty();
+
+	// Then fill it with all of the zones (these will be narrowed down to the
+	// final choice for this space, later):
+	ZoneSubSet = LevelZoneTiles;
 
 	// If this Zone is to be placed against an edge of
 	// the level generation area, then the tile will 
@@ -302,25 +300,25 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// South level-generation area 'edge':
 	if (CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y)
 	{
-		TargetEdgeColours[2] = AZone::EdgeColour::Red;
+		TargetEdgeColours[2] = UFPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	// North level-generation area 'edge':
 	if (CurrentPlacementPosition.Y == LevelExtents.Y)
 	{
-		TargetEdgeColours[0] = AZone::EdgeColour::Red;
+		TargetEdgeColours[0] = UFPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	// West level-generation area 'edge':
 	if (CurrentPlacementPosition.X == LevelGenerationStartPoint.X)
 	{
-		TargetEdgeColours[3] = AZone::EdgeColour::Red;
+		TargetEdgeColours[3] = UFPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	// East level-generation area 'edge':
 	if (CurrentPlacementPosition.X == LevelExtents.X)
 	{
-		TargetEdgeColours[1] = AZone::EdgeColour::Red;
+		TargetEdgeColours[1] = UFPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	// Check through PlacedLevelZones, to complete TargetEdgeColours.
@@ -335,15 +333,12 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		}
 
 		// Get the Edge colours of this Zone:
-		std::vector<AZone::EdgeColour> PlacedEdgeColours = PlacedLevelZones[PlacedZonesIterator]->GetEdgeColours();
+		std::vector<UFPSLevelGeneratorEdge::EdgeColour> PlacedEdgeColours = PlacedLevelZones[PlacedZonesIterator]->GetZoneEdgeColours();
 
 		// There is a tile to the west:
 		if (PlacedLevelZones[PlacedZonesIterator]->GetActorLocation().X ==
 			(CurrentPlacementPosition.X - DEFAULT_TILE_WIDTH))
 		{
-			// To make sure the Edges are up to date:
-			PlacedLevelZones[PlacedZonesIterator]->UpdateEdges();
-			PlacedLevelZones[PlacedZonesIterator]->UpdateZoneEdgesColour();
 			TargetEdgeColours[3] = PlacedEdgeColours[3];
 		}
 
@@ -351,19 +346,20 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		if (PlacedLevelZones[PlacedZonesIterator]->GetActorLocation().Y ==
 			(CurrentPlacementPosition.Y - DEFAULT_TILE_HEIGHT))
 		{
-			// To make sure the Edges are up to date:
-			PlacedLevelZones[PlacedZonesIterator]->UpdateEdges();
-			PlacedLevelZones[PlacedZonesIterator]->UpdateZoneEdgesColour();
 			TargetEdgeColours[2] = PlacedEdgeColours[2];
 		}
 	}
+
+	/** 
+	Not nessessary in the latest version, this class will instead determine which Zone to use, based on how Edges
+	match up against each other
+	
 
 	// Get a set of Zones that match the TargetEdgeColours...
 	for (int ZoneSetIterator = 0; ZoneSetIterator < LevelZoneTiles.Num(); ZoneSetIterator++)
 	{
 		// For the Edge-colours of this current Zone in the set:
-		LevelZoneTiles[ZoneSetIterator]->UpdateZoneEdgesColour();
-		std::vector<AZone::EdgeColour> CurrentZoneEdgeColours = LevelZoneTiles[ZoneSetIterator]->GetEdgeColours();
+		std::vector<UFPSLevelGeneratorEdge::EdgeColour> CurrentZoneEdgeColours = LevelZoneTiles[ZoneSetIterator]->GetZoneEdgeColours();
 
 		// For validating if a tile matches up to the TargetEdgeColours:
 		bool ZoneMatchesToTargetEdgeColours = true;
@@ -372,13 +368,13 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		for (int TargetEdgeColoursIterator = 0; TargetEdgeColoursIterator < TargetEdgeColours.size();
 			TargetEdgeColoursIterator++)
 		{
-			if (TargetEdgeColours[TargetEdgeColoursIterator] > AZone::EdgeColour::Grey - 1)
+			if (TargetEdgeColours[TargetEdgeColoursIterator] > UFPSLevelGeneratorEdge::EdgeColour::Grey - 1)
 			{
 				// This CurrentEdgeColour would not match up to TargetEdgeColour, so this zone would not go
 				// in the CurrentPlacementPosition.
 				// For the mean time, grey is assumed to be colourless (so matching with any colour):
 				if (!(CurrentZoneEdgeColours[TargetEdgeColoursIterator] == TargetEdgeColours[TargetEdgeColoursIterator]) &&
-					TargetEdgeColours[TargetEdgeColoursIterator] != AZone::EdgeColour::Grey)
+					TargetEdgeColours[TargetEdgeColoursIterator] != UFPSLevelGeneratorEdge::EdgeColour::Grey)
 				{
 					ZoneMatchesToTargetEdgeColours = false;
 					break;
@@ -391,26 +387,17 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			ZoneSubSet.Add(LevelZoneTiles[ZoneSetIterator]);
 		}
 	}
-
+	
 	// ...then pick one of these Zones from the sub-set:
 
-	// If there are any Zones in the sub-set:
+	// But if there are no Zones in the sub-set:
 	if (ZoneSubSet.Num() == 0)
 	{
 		return nullptr;
 	}
+	*/
 
-	// For the chosen Zone-index (pseudo-randomly chosen):	
-	std::default_random_engine RNG;
-	std::uniform_int_distribution<int> RandomDistribution(0, ZoneSubSet.Num() - 1);
-	
-	// Seed the RNG before using it:
-	RNG.seed(time(NULL));
-
-	// Make a call to 'flush' the stream before using it as well as seeding it:
-	RandomDistribution(RNG);
-
-	int ZoneChoice = RandomDistribution(RNG);
+	int ZoneChoice = GetZoneChoiceIndex(ZoneSubSet, TargetEdgeColours);
 	
 	// Return the Blueprint that represents this Zone:
 	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZoneTiles.Num(); ZoneBlueprintIterator++)
@@ -423,4 +410,276 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	}
 	
 	return nullptr;
+}
+
+/**
+	RESOLVE ISSUES WITH THIS FUNCTION'S DETERMINATION OF MATCHING EDGE TILES!!!IFAH*_FPYAW
+*/
+int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubsetReference,
+	std::vector<UFPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference)
+{
+	// The return value:
+	int NewZoneChoice = 0; 
+
+	// To determine the chance of a Zone with an Edge of a certain colour,
+	// getting chosen:	
+	std::default_random_engine RNG;
+	std::uniform_int_distribution<int> RandomDistribution(0, 100);
+
+	// Seed the RNG before using it:
+	RNG.seed(time(NULL));
+
+	// Make a call to 'flush' the stream before using it, as well as seeding it:
+	RandomDistribution(RNG);
+
+	int RNGResult = RandomDistribution(RNG);
+
+	/**
+	* For tracking which Edge to attempt to 'match' against.
+	* Start at the west Edge and move through the Edges anti-
+	* clockwise.
+	* Zone Edge order:
+	* First element: North Edge.
+	* Second element: East Edge.
+	* Third element: South Edge.
+	* Fourth element: West Edge.
+	*/
+	for (int CurrentEdgePosition = 3; CurrentEdgePosition > 0; CurrentEdgePosition--)
+	{		
+		// Match against blue:
+		if (TargetEdgeColoursReference[CurrentEdgePosition] == UFPSLevelGeneratorEdge::EdgeColour::Blue)
+		{
+			// Remove all Zones without a blue Edge at CurrentEdgePosition:
+			if (RNGResult < BLUE_TO_BLUE)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a green Edge at CurrentEdgePosition:
+			else if (RNGResult >= BLUE_TO_BLUE && 
+				RNGResult < BLUE_TO_BLUE + BLUE_TO_GREEN)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a red Edge at CurrentEdgePosition:
+			else if (RNGResult >= BLUE_TO_BLUE + BLUE_TO_GREEN && 
+				RNGResult < BLUE_TO_BLUE + BLUE_TO_GREEN + BLUE_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a grey Edge at CurrentEdgePosition:
+			else if (RNGResult >= BLUE_TO_BLUE + BLUE_TO_GREEN + BLUE_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+		}
+		// Match against green:
+		else if (TargetEdgeColoursReference[CurrentEdgePosition] == UFPSLevelGeneratorEdge::EdgeColour::Green)
+		{
+			// Remove all Zones without a blue Edge at CurrentEdgePosition:
+			if (RNGResult < GREEN_TO_BLUE)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a green Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREEN_TO_BLUE &&
+				RNGResult < GREEN_TO_BLUE + GREEN_TO_GREEN)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a red Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREEN_TO_BLUE + GREEN_TO_GREEN &&
+				RNGResult < GREEN_TO_BLUE + GREEN_TO_GREEN + GREEN_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a grey Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREEN_TO_BLUE + GREEN_TO_GREEN + GREEN_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+		}
+		// Match against red:
+		else if (TargetEdgeColoursReference[CurrentEdgePosition] == UFPSLevelGeneratorEdge::EdgeColour::Red)
+		{
+			// Remove all Zones without a blue Edge at CurrentEdgePosition:
+			if (RNGResult < RED_TO_BLUE)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a green Edge at CurrentEdgePosition:
+			else if (RNGResult >= RED_TO_BLUE &&
+				RNGResult < RED_TO_BLUE + RED_TO_GREEN)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a red Edge at CurrentEdgePosition:
+			else if (RNGResult >= RED_TO_BLUE + RED_TO_GREEN &&
+				RNGResult < RED_TO_BLUE + RED_TO_GREEN + RED_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a grey Edge at CurrentEdgePosition:
+			else if (RNGResult >= RED_TO_BLUE + RED_TO_GREEN + RED_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+		}
+		// Match against grey:
+		else if (TargetEdgeColoursReference[CurrentEdgePosition] == UFPSLevelGeneratorEdge::EdgeColour::Grey)
+		{
+			// Remove all Zones without a blue Edge at CurrentEdgePosition:
+			if (RNGResult < GREY_TO_BLUE)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a green Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREY_TO_BLUE &&
+				RNGResult < GREY_TO_BLUE + GREY_TO_GREEN)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a red Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREY_TO_BLUE + GREY_TO_GREEN &&
+				RNGResult < GREY_TO_BLUE + GREY_TO_GREEN + GREY_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+			// Remove all Zones without a grey Edge at CurrentEdgePosition:
+			else if (RNGResult >= GREY_TO_BLUE + GREY_TO_GREEN + GREY_TO_RED)
+			{
+				for (int ZoneSubsetIterator = 0; ZoneSubsetIterator < ZoneSubsetReference.Num() - 1;
+					ZoneSubsetIterator++)
+				{
+					if (ZoneSubsetReference[ZoneSubsetIterator]->GetZoneEdges()[CurrentEdgePosition]->
+						GetEdgeColour() != TargetEdgeColoursReference[CurrentEdgePosition])
+					{
+						ZoneSubsetReference.RemoveAt(ZoneSubsetIterator, 1, true);
+					}
+				}
+			}
+		}
+	}
+
+	// There should only be 1 Zone in the ZoneSubset, at index 0:
+	return NewZoneChoice;
 }

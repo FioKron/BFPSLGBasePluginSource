@@ -14,17 +14,17 @@ AZone::AZone()
 	SouthEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("SouthEdge");
 	WestEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("WestEdge");
 
-	FVector2D NorthEdgePosition = DEFAULT_NORTH_EDGE_RELATIVE_POSITION;
-	FVector2D EastEdgePosition = DEFAULT_EAST_EDGE_RELATIVE_POSITION;
-	FVector2D SouthEdgePosition = DEFAULT_SOUTH_EDGE_RELATIVE_POSITION;
-	FVector2D WestEdgePosition = DEFAULT_WEST_EDGE_RELATIVE_POSITION;
+	FVector2D NorthEdgeCentrePoint = NorthEdge->DEFAULT_NORTH_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D EastEdgeCentrePoint = EastEdge->DEFAULT_EAST_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D SouthEdgeCentrePoint = SouthEdge->DEFAULT_SOUTH_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D WestEdgeCentrePoint = WestEdge->DEFAULT_WEST_EDGE_RELATIVE_CENTRE_POINT;
 
-	NorthEdge->InitialiseEdge(NorthEdgePosition);
-	EastEdge->InitialiseEdge(EastEdgePosition);
-	SouthEdge->InitialiseEdge(SouthEdgePosition);
-	WestEdge->InitialiseEdge(WestEdgePosition);
+	NorthEdge->InitialiseEdge(NorthEdgeCentrePoint);
+	EastEdge->InitialiseEdge(EastEdgeCentrePoint);
+	SouthEdge->InitialiseEdge(SouthEdgeCentrePoint);
+	WestEdge->InitialiseEdge(WestEdgeCentrePoint);
 
-	EdgeColours = std::vector<EdgeColour>(size_t(DEFAULT_ZONE_EDGE_COUNT));
+	ZoneEdgeColours = std::vector<UFPSLevelGeneratorEdge::EdgeColour>(size_t(DEFAULT_ZONE_EDGE_COUNT));
 }
 
 // Initialise what the constructor is not able to:
@@ -39,11 +39,22 @@ void AZone::InitialiseZone()
 
 	// For setting-up zone objects:
 	TArray<UActorComponent*> ZoneComponents = GetComponentsByClass(UStaticMeshComponent::StaticClass());
+	// To make sure this struct's vector can hold the correct number of components:
+	ThisZonesObjects.ZoneObjectsPositionScale = std::vector<ZoneObjectPositionScale>(size_t(ZoneComponents.Num()));
 
 	for (int Iterator = 0; Iterator < ZoneComponents.Num(); Iterator++)
 	{
 		ZoneObjects.Add(Cast<UStaticMeshComponent>(ZoneComponents[Iterator]));
+		ThisZonesObjects.ZoneObjectsPositionScale[Iterator] = 
+			ZoneObjectPositionScale(
+				ZoneObjects[Iterator]->RelativeLocation,
+				ZoneObjects[Iterator]->RelativeScale3D);
 	}
+
+	// Now the instance has all the objects in the Zone,
+	// it is now possible to determine the proper colour
+	// of this Zone's Edges:
+	DetermineZoneEdgesColour();
 }
 
 TArray<UFPSLevelGeneratorEdge*> AZone::GetZoneEdges()
@@ -51,63 +62,110 @@ TArray<UFPSLevelGeneratorEdge*> AZone::GetZoneEdges()
 	return ZoneEdges;
 }
 
-std::vector<AZone::EdgeColour> AZone::GetEdgeColours()
+std::vector<UFPSLevelGeneratorEdge::EdgeColour> AZone::GetZoneEdgeColours()
 {
-	return EdgeColours;
+	return ZoneEdgeColours;
 }
 
-void AZone::UpdateZoneEdgesColour()
+// Check to see what Zone this is, then change the Edge colours accordingly:
+void AZone::DetermineZoneEdgesColour()
 {
-	// Keep the edges in check:
-	UpdateEdges();
-
-	for (int EdgeCollectionIterator = 0; EdgeCollectionIterator <
-		ZoneEdges.Num(); EdgeCollectionIterator++)
+	if (ThisZonesObjects == WANG_TILE_ONE)
 	{
-		float CurrentEdgeDensity = ZoneEdges[EdgeCollectionIterator]->GetEdgeDensity();
-		
-		// Grey:
-		if (CurrentEdgeDensity > 0 && CurrentEdgeDensity <= GREY_COLOUR_RANGE_UPPER_BOUND)
-		{
-			EdgeColours[EdgeCollectionIterator] = EdgeColour::Grey;
-		}
-		// Red:
-		else if (CurrentEdgeDensity > GREY_COLOUR_RANGE_UPPER_BOUND &&
-			CurrentEdgeDensity <= RED_COLOUR_RANGE_UPPER_BOUND)
-		{
-			EdgeColours[EdgeCollectionIterator] = EdgeColour::Red;
-		}
-		// Green:
-		else if (CurrentEdgeDensity > RED_COLOUR_RANGE_UPPER_BOUND &&
-			CurrentEdgeDensity <= GREEN_COLOUR_RANGE_UPPER_BOUND)
-		{
-			EdgeColours[EdgeCollectionIterator] = EdgeColour::Green;
-		}
-		// Blue:
-		else if (CurrentEdgeDensity > GREEN_COLOUR_RANGE_UPPER_BOUND &&
-			CurrentEdgeDensity <= BLUE_COLOUR_RANGE_UPPER_BOUND)
-		{
-			EdgeColours[EdgeCollectionIterator] = EdgeColour::Blue;
-		}
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (ThisZonesObjects == WANG_TILE_TWO)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_THREE)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (ThisZonesObjects == WANG_TILE_FOUR)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_FIVE)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_SIX)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (ThisZonesObjects == WANG_TILE_SEVEN)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_EIGHT)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_NINE)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (ThisZonesObjects == WANG_TILE_TEN)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (ThisZonesObjects == WANG_TILE_ELEVEN)
+	{
+		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Grey);
 	}
 }
 
+/**
 void AZone::UpdateEdges()
 {
-	for (int Iterator = 0; Iterator < ZoneEdges.Num(); Iterator++)
-	{
-		ZoneEdges[Iterator]->UpdateEdgeDensity(ZoneObjects);
-	}
+	
 }
+*/
 
 // Update:
 void AZone::Tick(float DeltaSeconds)
 {
 	// Call the update methods when it is time:
+	/**
 	TickTimer += DeltaSeconds;
 
 	if (TickTimer >= UPDATE_FREQUENCY)
 	{
 		UpdateEdges();
 	}	
+	*/
 }
