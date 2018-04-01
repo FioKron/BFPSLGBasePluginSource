@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Zone.h"
-#include "FPSLevelGeneratorEdge.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 #include "Runtime/Engine/Classes/Components/StaticMeshComponent.h"
 
@@ -9,46 +8,51 @@
 // Initialise:
 AZone::AZone()
 {
-	NorthEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("NorthEdge");
-	EastEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("EastEdge");
-	SouthEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("SouthEdge");
-	WestEdge = CreateDefaultSubobject<UFPSLevelGeneratorEdge>("WestEdge");
+	// Make sure this zone is not cleaned-up before it's used:
+	AddToRoot();
+	/**
+	// Make sure these Edges are rooted (so they are not collected by
+	// the Garbage Collector):
+	NorthEdge.SetFlags(EObjectFlags::RF_MarkAsRootSet);
+	NorthEdge.AddToRoot();
+	EastEdge.SetFlags(EObjectFlags::RF_MarkAsRootSet);
+	EastEdge.AddToRoot();
+	SouthEdge.SetFlags(EObjectFlags::RF_MarkAsRootSet);
+	SouthEdge.AddToRoot();
+	WestEdge.SetFlags(EObjectFlags::RF_MarkAsRootSet);
+	WestEdge.AddToRoot();
+	*/
 
-	FVector2D NorthEdgeCentrePoint = NorthEdge->DEFAULT_NORTH_EDGE_RELATIVE_CENTRE_POINT;
-	FVector2D EastEdgeCentrePoint = EastEdge->DEFAULT_EAST_EDGE_RELATIVE_CENTRE_POINT;
-	FVector2D SouthEdgeCentrePoint = SouthEdge->DEFAULT_SOUTH_EDGE_RELATIVE_CENTRE_POINT;
-	FVector2D WestEdgeCentrePoint = WestEdge->DEFAULT_WEST_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D NorthEdgeCentrePoint = NorthEdge.DEFAULT_NORTH_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D EastEdgeCentrePoint = EastEdge.DEFAULT_EAST_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D SouthEdgeCentrePoint = SouthEdge.DEFAULT_SOUTH_EDGE_RELATIVE_CENTRE_POINT;
+	FVector2D WestEdgeCentrePoint = WestEdge.DEFAULT_WEST_EDGE_RELATIVE_CENTRE_POINT;
 
-	NorthEdge->InitialiseEdge(NorthEdgeCentrePoint);
-	EastEdge->InitialiseEdge(EastEdgeCentrePoint);
-	SouthEdge->InitialiseEdge(SouthEdgeCentrePoint);
-	WestEdge->InitialiseEdge(WestEdgeCentrePoint);
+	NorthEdge.InitialiseEdge(NorthEdgeCentrePoint);
+	EastEdge.InitialiseEdge(EastEdgeCentrePoint);
+	SouthEdge.InitialiseEdge(SouthEdgeCentrePoint);
+	WestEdge.InitialiseEdge(WestEdgeCentrePoint);
 
-	ZoneEdgeColours = std::vector<UFPSLevelGeneratorEdge::EdgeColour>(size_t(DEFAULT_ZONE_EDGE_COUNT));
+	ZoneEdgeColours = std::vector<FPSLevelGeneratorEdge::EdgeColour>(size_t(DEFAULT_ZONE_EDGE_COUNT));
 }
 
 // Initialise what the constructor is not able to:
 void AZone::InitialiseZone()
 {
 	TickTimer = 0.0f;
+	ZoneValidForPlacement = false;
 
-	ZoneEdges.Add(NorthEdge);
-	ZoneEdges.Add(EastEdge);
-	ZoneEdges.Add(SouthEdge);
-	ZoneEdges.Add(WestEdge);
+	ZoneEdges.push_back(NorthEdge);
+	ZoneEdges.push_back(EastEdge);
+	ZoneEdges.push_back(SouthEdge);
+	ZoneEdges.push_back(WestEdge);
 
 	// For setting-up zone objects:
 	TArray<UActorComponent*> ZoneComponents = GetComponentsByClass(UStaticMeshComponent::StaticClass());
-	// To make sure this struct's vector can hold the correct number of components:
-	ThisZonesObjects.ZoneObjectsPositionScale = std::vector<ZoneObjectPositionScale>(size_t(ZoneComponents.Num()));
 
 	for (int Iterator = 0; Iterator < ZoneComponents.Num(); Iterator++)
 	{
 		ZoneObjects.Add(Cast<UStaticMeshComponent>(ZoneComponents[Iterator]));
-		ThisZonesObjects.ZoneObjectsPositionScale[Iterator] = 
-			ZoneObjectPositionScale(
-				ZoneObjects[Iterator]->RelativeLocation,
-				ZoneObjects[Iterator]->RelativeScale3D);
 	}
 
 	// Now the instance has all the objects in the Zone,
@@ -57,96 +61,117 @@ void AZone::InitialiseZone()
 	DetermineZoneEdgesColour();
 }
 
-TArray<UFPSLevelGeneratorEdge*> AZone::GetZoneEdges()
+void AZone::SetZoneValidForPlacement(bool NewZoneValidForPlacement)
+{
+	ZoneValidForPlacement = NewZoneValidForPlacement;
+}
+
+std::vector<FPSLevelGeneratorEdge> AZone::GetZoneEdges()
 {
 	return ZoneEdges;
 }
 
-std::vector<UFPSLevelGeneratorEdge::EdgeColour> AZone::GetZoneEdgeColours()
+std::vector<FPSLevelGeneratorEdge::EdgeColour> AZone::GetZoneEdgeColours()
 {
+	// Make sure to set ZoneEdgeColours up correctly as well:
+	ZoneEdgeColours[0] = NorthEdge.GetEdgeColour();
+	ZoneEdgeColours[1] = EastEdge.GetEdgeColour();
+	ZoneEdgeColours[2] = SouthEdge.GetEdgeColour();
+	ZoneEdgeColours[3] = WestEdge.GetEdgeColour();
 	return ZoneEdgeColours;
+}
+
+bool AZone::GetZoneValidForPlacement()
+{
+	return ZoneValidForPlacement;
 }
 
 // Check to see what Zone this is, then change the Edge colours accordingly:
 void AZone::DetermineZoneEdgesColour()
 {
-	if (ThisZonesObjects == WANG_TILE_ONE)
+	if (Tags.Contains(WANG_TILE_ONE))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
-	else if (ThisZonesObjects == WANG_TILE_TWO)
+	else if (Tags.Contains(WANG_TILE_TWO))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_THREE)
+	else if (Tags.Contains(WANG_TILE_THREE))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
-	else if (ThisZonesObjects == WANG_TILE_FOUR)
+	else if (Tags.Contains(WANG_TILE_FOUR))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_FIVE)
+	else if (Tags.Contains(WANG_TILE_FIVE))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_SIX)
+	else if (Tags.Contains(WANG_TILE_SIX))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
-	else if (ThisZonesObjects == WANG_TILE_SEVEN)
+	else if (Tags.Contains(WANG_TILE_SEVEN))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_EIGHT)
+	else if (Tags.Contains(WANG_TILE_EIGHT))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_NINE)
+	else if (Tags.Contains(WANG_TILE_NINE))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
 	}
-	else if (ThisZonesObjects == WANG_TILE_TEN)
+	else if (Tags.Contains(WANG_TILE_TEN))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Red);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
-	else if (ThisZonesObjects == WANG_TILE_ELEVEN)
+	else if (Tags.Contains(WANG_TILE_ELEVEN))
 	{
-		NorthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		SouthEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Blue);
-		WestEdge->InitialiseEdgeColour(UFPSLevelGeneratorEdge::EdgeColour::Grey);
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Grey);
 	}
+
+	// Make sure to set ZoneEdgeColours up correctly as well:
+	ZoneEdgeColours[0] = NorthEdge.GetEdgeColour();
+	ZoneEdgeColours[1] = EastEdge.GetEdgeColour();
+	ZoneEdgeColours[2] = SouthEdge.GetEdgeColour();
+	ZoneEdgeColours[3] = WestEdge.GetEdgeColour();
 }
 
 /**
@@ -155,17 +180,3 @@ void AZone::UpdateEdges()
 	
 }
 */
-
-// Update:
-void AZone::Tick(float DeltaSeconds)
-{
-	// Call the update methods when it is time:
-	/**
-	TickTimer += DeltaSeconds;
-
-	if (TickTimer >= UPDATE_FREQUENCY)
-	{
-		UpdateEdges();
-	}	
-	*/
-}

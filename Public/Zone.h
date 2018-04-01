@@ -9,6 +9,84 @@
 #include "FPSLevelGeneratorEdge.h" // For this Zone's Edges.
 #include "Zone.generated.h"
 
+/** As UFPSLevelGeneratorEdge properties were getting cleaned up. */
+USTRUCT()
+struct FPSLevelGeneratorEdge
+{
+	GENERATED_BODY()
+
+public:
+
+	// Operators:
+
+	/** To remove complaints of the '=' operator being delated. */
+	FPSLevelGeneratorEdge& FPSLevelGeneratorEdge::operator=(const FPSLevelGeneratorEdge& RightHandSide)
+	{
+
+	}
+
+	// Enumerations:
+
+	enum EdgeColour
+	{
+		Colourless,
+		Grey,
+		Red,
+		Green,
+		Blue
+	};
+
+	// Functions/Methods:
+
+	/** Default constructor (required by UE4). */
+	FPSLevelGeneratorEdge::FPSLevelGeneratorEdge()
+	{
+
+	}
+
+	// Initialisation methods:
+
+	void InitialiseEdge(FVector2D NewEdgeCentrePoint)
+	{
+		EdgeCentrePoint = NewEdgeCentrePoint;
+	}
+
+	/** EdgeColour is calculated manually for now, the result is parsed into this function. */
+	void InitialiseEdgeColour(EdgeColour NewEdgeColour)
+	{
+		ThisEdgeColour = NewEdgeColour;
+	}
+
+	// Get functions:
+	const EdgeColour GetEdgeColour()
+	{
+		return ThisEdgeColour;
+	}
+
+	// Properties:
+
+	// Constant Values:
+
+	/** For the relative centre-points of a respective edge. */
+	const FVector2D DEFAULT_NORTH_EDGE_RELATIVE_CENTRE_POINT = FVector2D(0.0f, -45.0f);
+	const FVector2D DEFAULT_EAST_EDGE_RELATIVE_CENTRE_POINT = FVector2D(45.0f, 0.0f);
+	const FVector2D DEFAULT_SOUTH_EDGE_RELATIVE_CENTRE_POINT = FVector2D(0.0f, 45.0f);
+	const FVector2D DEFAULT_WEST_EDGE_RELATIVE_CENTRE_POINT = FVector2D(-45.0f, 0.0f);
+
+private:
+
+	// Properties:
+
+	/** For the colour of this edge. */
+	EdgeColour ThisEdgeColour;
+
+	/**
+	* The centre point of this edge, used
+	* in the calculations for this Edge's density.
+	*/
+	FVector2D EdgeCentrePoint;
+};
+
 /**
  * This class represents the area of a level, that the space-filling algorithm
  * (Wang Tiles, as of 13/03/2018), will use to fix components of the level 
@@ -21,87 +99,17 @@ class BALANCEDFPSLEVELGENERATOR_API AZone : public AActor
 
 public:
 
-	// Structures:
-
-	/** To store the position and scale of any object in the Zone. */
-	struct ZoneObjectPositionScale
-	{
-		// Functions/Methods:
-
-		/** Standard constructor. */
-		ZoneObjectPositionScale::ZoneObjectPositionScale(
-			FVector NewObjectPosition, FVector NewObjectScale)
-		{
-			ObjectPosition = NewObjectPosition;
-			ObjectScale = NewObjectScale;
-		}
-
-		/** Default constructor (required by xmemory0). */
-		ZoneObjectPositionScale::ZoneObjectPositionScale()
-		{
-
-		}
-
-		// Properties:
-
-		FVector ObjectPosition;
-		FVector ObjectScale;
-	};
-
-	/** To use for constant values that identify specific Zones. */
-	struct ZoneObjectPropertySet
-	{
-		// Properties:
-
-		std::vector<ZoneObjectPositionScale> ZoneObjectsPositionScale;
-
-		// Operator overloading:
-
-		/** To check for equality between ZoneObjectPropertySets. */
-		bool ZoneObjectPropertySet::operator==(const ZoneObjectPropertySet RightHandSide)
-		{
-			// Set to false if one of the object's FVectors in the vectors of both sets,
-			// would not match-up:
-			bool SetsAreEqual = true;
-
-			// Compare the properties of each object stored in the struct values for each
-			// vector, against the other values:
-			for (ZoneObjectPositionScale CurrentZoneObject : ZoneObjectsPositionScale)
-			{
-				for (ZoneObjectPositionScale ComparisonZoneObject : RightHandSide.ZoneObjectsPositionScale)
-				{
-					SetsAreEqual = CurrentZoneObject.ObjectPosition == ComparisonZoneObject.ObjectPosition;
-					// To skip having to check the rest of the values in each vector against each other:
-					if (!SetsAreEqual)
-					{
-						return SetsAreEqual;
-					}
-					SetsAreEqual = CurrentZoneObject.ObjectScale == ComparisonZoneObject.ObjectScale;
-					if (!SetsAreEqual)
-					{
-						return SetsAreEqual;
-					}
-				}
-			}
-
-			return SetsAreEqual;
-		}
-	};
-	
 	// Properties:
 
-	/** These represent the Edges of this zone (to be put into the ZoneEdges Array). */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Zone perimeter")
-	class UFPSLevelGeneratorEdge* NorthEdge;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Zone perimeter")
-	UFPSLevelGeneratorEdge* EastEdge;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Zone perimeter")
-	UFPSLevelGeneratorEdge* SouthEdge;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Zone perimeter")
-	UFPSLevelGeneratorEdge* WestEdge;
+	/** 
+	* These represent the Edges of this zone (to be put into the ZoneEdges Array).
+	* The RF_RootSet flag is used to make sure they are not cleaned up by the 
+	* Garbage Collector.
+	*/
+	FPSLevelGeneratorEdge NorthEdge;
+	FPSLevelGeneratorEdge EastEdge;
+	FPSLevelGeneratorEdge SouthEdge;
+	FPSLevelGeneratorEdge WestEdge;
 
 	// Functions/Methods:
 
@@ -111,9 +119,9 @@ public:
 	/** For proper initialisation. */
 	void InitialiseZone();
 
-	/** For updating */
-	//void UpdateEdges();
-	void Tick(float DeltaSeconds)override;
+	// Set methods:
+
+	void SetZoneValidForPlacement(bool NewZoneValidForPlacement);
 	
 	// Get functions:
 
@@ -124,10 +132,11 @@ public:
 	* Third element: South Edge.
 	* Fourth element: West Edge.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "Zone Perimeter")
-	TArray<UFPSLevelGeneratorEdge*> GetZoneEdges();
+	std::vector<FPSLevelGeneratorEdge> GetZoneEdges();
 
-	std::vector<UFPSLevelGeneratorEdge::EdgeColour> GetZoneEdgeColours();
+	std::vector<FPSLevelGeneratorEdge::EdgeColour> GetZoneEdgeColours();
+
+	bool GetZoneValidForPlacement();
 
 	//UFUNCTION(BlueprintCallable, Category = "Zone Content")
 	//TArray<UActorComponent*> GetZoneObjects();
@@ -145,25 +154,27 @@ private:
 	// Properties:
 
 	/** For each Edge of this Zone (4 of them by default). */
-	TArray<UFPSLevelGeneratorEdge*> ZoneEdges;
+	std::vector<FPSLevelGeneratorEdge> ZoneEdges;
 
 	/** 
 	* For the colour of this Zone's Edges.
 	* This vector is in the order noted above.
 	*/
-	std::vector<UFPSLevelGeneratorEdge::EdgeColour> ZoneEdgeColours;
+	std::vector<FPSLevelGeneratorEdge::EdgeColour> ZoneEdgeColours;
 
 	/** To hold all of the objects in the Zone. */
 	TArray<UStaticMeshComponent*> ZoneObjects;
-
-	/** To check which Zone of the tile-set this is. */
-	ZoneObjectPropertySet ThisZonesObjects;
 
 	/** 
 	* For avoid calling the update functions for every
 	* call of Tick().
 	*/
 	float TickTimer;
+
+	// Flags:
+
+	// For if it is valid to place this zone:
+	bool ZoneValidForPlacement;
 
 	// Constant Values:
 
@@ -179,117 +190,15 @@ private:
 	const int DEFAULT_ZONE_EDGE_COUNT = 4;
 
 	/** These values are used to idenfiy each Zone. */
-	const ZoneObjectPropertySet WANG_TILE_ONE = 
-	{ std::vector<ZoneObjectPositionScale>
-		{ 
-			ZoneObjectPositionScale(FVector(5.0f, -45.0f, -50.0f), 
-				FVector(0.90f, 0.10f, 1.0f)), 
-			ZoneObjectPositionScale(FVector(5.0f, 45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 0.0f, -50.0f), 
-				FVector(0.10f, 1.0f, 1.0f))
-		} 
-	};
-	const ZoneObjectPropertySet WANG_TILE_TWO =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(0.0f, -45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(0.0f, 45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_THREE =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(5.0f, -45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 1.0f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_FOUR =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(-5.0f, -45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 1.0f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_FIVE =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 1.0f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-5.0f, 45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_SIX =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(0.0f, 45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, -5.0f, -50.0f),
-				FVector(0.10f, 0.90f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_SEVEN =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(0.2548340f, -0.0001450f, -50.0f),
-				FVector(0.10f, 1.30f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_EIGHT =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(-5.0f, -45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(45.0f, -25.0f, -50.0f),
-				FVector(0.10f, 0.50f, 1.0f)),
-			ZoneObjectPositionScale(FVector(5.0f, 45.0f, -50.0f),
-				FVector(0.90f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 25.0f, -50.0f),
-				FVector(0.10f, 0.50f, 1.0f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_NINE =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(0.0f, -45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 0.80f, 0.40f)),
-			ZoneObjectPositionScale(FVector(0.0f, 45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 0.80f, 0.10f))
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_TEN =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 1.0f, 1.0f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 1.0f, 1.0f)),
-		}
-	};
-	const ZoneObjectPropertySet WANG_TILE_ELEVEN =
-	{ std::vector<ZoneObjectPositionScale>
-		{
-			ZoneObjectPositionScale(FVector(0.0f, -45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 0.80f, 0.40f)),
-			ZoneObjectPositionScale(FVector(0.0f, 45.0f, -50.0f),
-				FVector(1.0f, 0.10f, 1.0f)),
-			ZoneObjectPositionScale(FVector(0.0f, 0.0f, -50.0f),
-				FVector(0.10f, 0.80f, 0.40f)),
-			ZoneObjectPositionScale(FVector(-45.0f, 0.0f, -50.0f),
-				FVector(0.10f, 0.80f, 0.40f)),
-		}
-	};
+	const FName WANG_TILE_ONE = "WangTile1";
+	const FName WANG_TILE_TWO = "WangTile2";
+	const FName WANG_TILE_THREE = "WangTile3";
+	const FName WANG_TILE_FOUR = "WangTile4";
+	const FName WANG_TILE_FIVE = "WangTile5";
+	const FName WANG_TILE_SIX = "WangTile6";
+	const FName WANG_TILE_SEVEN = "WangTile7";
+	const FName WANG_TILE_EIGHT = "WangTile8";
+	const FName WANG_TILE_NINE = "WangTile9";
+	const FName WANG_TILE_TEN = "WangTile10";
+	const FName WANG_TILE_ELEVEN = "WangTile11";
 };

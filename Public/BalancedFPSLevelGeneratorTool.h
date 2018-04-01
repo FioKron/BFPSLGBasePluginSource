@@ -80,7 +80,12 @@ private:
 
 	/** For getting an index of the Zone to use. */
 	int GetZoneChoiceIndex(TArray<AZone*>& ZoneSubsetReference,
-		std::vector<UFPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference);
+		std::vector<FPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference);
+
+	/** To remove zones that would not match up to the select edge-comparison. */
+	void UpdateValidZonesForPlacement(TArray<AZone*>& ZoneSubsetReference,
+		FPSLevelGeneratorEdge::EdgeColour TargetEdgeColour,
+		int CurrentEdgePosition);
 
 	// Properties:
 
@@ -115,27 +120,38 @@ private:
 
 	// Used in comparison between a Zone's Edges: 
 	
+	/** Colourless against another. */
+	const int COLOURLESS_TO_BLUE = 5;
+	const int COLOURLESS_TO_GREEN = 5;
+	const int COLOURLESS_TO_RED = 5;
+	const int COLOURLESS_TO_GREY = 20;
+	const int COLOURLESS_TO_COLOURLESS = 65;
+
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 82;
-	const int BLUE_TO_GREEN = 6;
-	const int BLUE_TO_RED = 6;
-	const int BLUE_TO_GREY = 6;
+	const int BLUE_TO_BLUE = 84;
+	const int BLUE_TO_GREEN = 4;
+	const int BLUE_TO_RED = 4;
+	const int BLUE_TO_GREY = 4;
+	const int BLUE_TO_COLOURLESS = 4;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 6;
-	const int GREEN_TO_GREEN = 14;
-	const int GREEN_TO_RED = 35;
-	const int GREEN_TO_GREY = 45;
+	const int GREEN_TO_BLUE = 5;
+	const int GREEN_TO_GREEN = 10;
+	const int GREEN_TO_RED = 15;
+	const int GREEN_TO_GREY = 20;
+	const int GREEN_TO_COLOURLESS = 55;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 6;
-	const int RED_TO_GREEN = 10;
-	const int RED_TO_RED = 24;
-	const int RED_TO_GREY = 60;
+	const int RED_TO_BLUE = 5;
+	const int RED_TO_GREEN = 15;
+	const int RED_TO_RED = 20;
+	const int RED_TO_GREY = 25;
+	const int RED_TO_COLOURLESS = 35;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 6;
-	const int GREY_TO_GREEN = 6;
-	const int GREY_TO_RED = 6;
-	const int GREY_TO_GREY = 82;
+	const int GREY_TO_BLUE = 4;
+	const int GREY_TO_GREEN = 4;
+	const int GREY_TO_RED = 4;
+	const int GREY_TO_GREY = 4;
+	const int GREY_TO_COLOURLESS = 84;
 };
