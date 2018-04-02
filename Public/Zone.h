@@ -111,6 +111,11 @@ public:
 	FPSLevelGeneratorEdge SouthEdge;
 	FPSLevelGeneratorEdge WestEdge;
 
+	// Constant values:
+
+	/** For the default ZoneEdge properties (during initialisation). */
+	static const int DEFAULT_ZONE_EDGE_COUNT = 4;
+
 	// Functions/Methods:
 
 	/** Default constructor (required by UE4). */
@@ -179,15 +184,6 @@ private:
 	// Constant Values:
 
 	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
-
-	/** 
-	* For how often the update functions should
-	* be called in Tick().
-	*/
-	const float UPDATE_FREQUENCY = 1000.0f;
-
-	/** For the default ZoneEdge properties (during initialisation). */
-	const int DEFAULT_ZONE_EDGE_COUNT = 4;
 
 	/** These values are used to idenfiy each Zone. */
 	const FName WANG_TILE_ONE = "WangTile1";

@@ -10,6 +10,36 @@
 
 #include "BalancedFPSLevelGeneratorTool.generated.h"
 
+// Structures:
+
+/** For the edge-colours of all of the ZoneTiles. */
+struct ZoneTileEdgeColours
+{
+	// Properties:
+
+	std::vector<std::vector<FPSLevelGeneratorEdge::EdgeColour>> AllEdgeColours;
+
+	// Functions/Methods:
+
+	/** Standard constructor. */
+	ZoneTileEdgeColours::ZoneTileEdgeColours(int TileCount)
+	{
+		AllEdgeColours = std::vector<std::vector<FPSLevelGeneratorEdge::EdgeColour>>(TileCount);
+
+		for (int ZoneTileEdgeColoursIterator = 0; ZoneTileEdgeColoursIterator < AllEdgeColours.size();
+			ZoneTileEdgeColoursIterator++)
+		{
+			AllEdgeColours[ZoneTileEdgeColoursIterator] = std::vector<FPSLevelGeneratorEdge::EdgeColour>(size_t(AZone::DEFAULT_ZONE_EDGE_COUNT));
+		}
+	}
+
+	/** Default constructor (required by VS). */
+	ZoneTileEdgeColours::ZoneTileEdgeColours()
+	{
+
+	}
+};
+
 /**
  * This is the main class of this bundle, that handles the top-layer of level generation.
  * Functionality for certain components of this level generation, is handled by other
@@ -87,6 +117,18 @@ private:
 		FPSLevelGeneratorEdge::EdgeColour TargetEdgeColour,
 		int CurrentEdgePosition);
 
+	/** Match against Edges of a certain colour. */
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstColourless(TArray<AZone*>& ZoneSubsetReference,
+		 int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGrey(TArray<AZone*>& ZoneSubsetReference,
+		 int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstRed(TArray<AZone*>& ZoneSubsetReference,
+		 int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGreen(TArray<AZone*>& ZoneSubsetReference,
+		 int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstBlue(TArray<AZone*>& ZoneSubsetReference,
+		 int RNGResult);
+
 	// Properties:
 
 	/** The default scale for the panels of the level. */
@@ -105,6 +147,9 @@ private:
 	/** For all of the zones placed in the level (from the LevelZoneTileBlueprints set). */
 	TArray<AZone*> PlacedLevelZones;
 
+	/** For the edge-colours of all of the zones. */
+	ZoneTileEdgeColours ZonesEdgeColours;
+
 	// Constant Values:
 
 	const int TOTAL_ZONE_BLUEPRINT_COUNT = 11;
@@ -118,40 +163,45 @@ private:
 	const float DEFAULT_TILE_HEIGHT = 100.0f;
 	const float DEFAULT_TILE_DEPTH = 10.0f;
 
+	/** 
+	* The number of edges that have to match,
+	* if there is no asbolute match.
+	*/
+	const int INCOMPLETE_MATCH_THRESHOLD = 2;
+
 	// Used in comparison between a Zone's Edges: 
 	
 	/** Colourless against another. */
 	const int COLOURLESS_TO_BLUE = 5;
-	const int COLOURLESS_TO_GREEN = 5;
-	const int COLOURLESS_TO_RED = 5;
-	const int COLOURLESS_TO_GREY = 20;
-	const int COLOURLESS_TO_COLOURLESS = 65;
+	const int COLOURLESS_TO_GREEN = 10;
+	const int COLOURLESS_TO_RED = 75;
+	const int COLOURLESS_TO_GREY = 10;
 
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 84;
-	const int BLUE_TO_GREEN = 4;
-	const int BLUE_TO_RED = 4;
-	const int BLUE_TO_GREY = 4;
-	const int BLUE_TO_COLOURLESS = 4;
+	const int BLUE_TO_BLUE = 5;
+	const int BLUE_TO_GREEN = 15;
+	const int BLUE_TO_RED = 65;
+	const int BLUE_TO_GREY = 10;
+	const int BLUE_TO_COLOURLESS = 5;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 5;
+	const int GREEN_TO_BLUE = 1;
 	const int GREEN_TO_GREEN = 10;
-	const int GREEN_TO_RED = 15;
-	const int GREEN_TO_GREY = 20;
-	const int GREEN_TO_COLOURLESS = 55;
+	const int GREEN_TO_RED = 80;
+	const int GREEN_TO_GREY = 6;
+	const int GREEN_TO_COLOURLESS = 3;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 5;
-	const int RED_TO_GREEN = 15;
-	const int RED_TO_RED = 20;
-	const int RED_TO_GREY = 25;
-	const int RED_TO_COLOURLESS = 35;
+	const int RED_TO_BLUE = 3;
+	const int RED_TO_GREEN = 6;
+	const int RED_TO_RED = 80;
+	const int RED_TO_GREY = 10;
+	const int RED_TO_COLOURLESS = 1;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 4;
-	const int GREY_TO_GREEN = 4;
-	const int GREY_TO_RED = 4;
-	const int GREY_TO_GREY = 4;
-	const int GREY_TO_COLOURLESS = 84;
+	const int GREY_TO_BLUE = 1;
+	const int GREY_TO_GREEN = 3;
+	const int GREY_TO_RED = 90;
+	const int GREY_TO_GREY = 5;
+	const int GREY_TO_COLOURLESS = 1;
 };
