@@ -223,14 +223,19 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 
 	// To offset the placement of zones (to fall within the level generation area):
 	const FVector2D ZONE_POSITION_OFFSET = FVector2D(50.0f, 50.0f);
-	
+
 	// For the Zone Blueprints, as Actors:
 	TArray<AActor*> ActorZones;
 	UGameplayStatics::GetAllActorsOfClass(GEditor->GetEditorWorldContext()
 		.World()->GetCurrentLevel(), AZone::StaticClass(), ActorZones);
+
+	// Remove all the Zone Blueprints that have no tag:
+	for (int ActorZonesIterator = 0; ActorZonesIterator < ActorZones.Num() - 1; ActorZonesIterator++)
+	{
+
+	}
 	
-	// To store the array of zones
-	TArray<AZone*> LevelZones;
+	// Store the zones:
 	for (int ActorZonesCounter = 0; ActorZonesCounter < ActorZones.Num(); ActorZonesCounter++)
 	{
 		// Initialise here as well:
@@ -279,15 +284,18 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 					ZONE_POSITION_OFFSET.X, LevelZoneTransform.GetLocation().Y - ZONE_POSITION_OFFSET.Y, LevelZoneTransform.GetLocation().Z),
 					LevelZoneTransform.GetScale3D());
 				// INVALID ACCESS OPERATION OCCURS HERE:
+				UBlueprint* ZoneTileBlueprint = GetSuitableZoneTile(FVector2D(CurrentPosition));
 				
 				ZoneTile = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
-					GetSuitableZoneTile(FVector2D(CurrentPosition), LevelZones), LevelZoneTransform, false);
+					ZoneTileBlueprint, LevelZoneTransform, false);
+				// Nullify the ZoneTileBlueprint, so that it is set again:
+				ZoneTileBlueprint = nullptr;
 
 				// Sanity check:
 				if (ZoneTile)
 				{
 					ZoneTile->ExecuteConstruction(LevelZoneTransform, nullptr, nullptr, true);
-				}
+				}				
 
 				int WHAT = 0;
 
@@ -297,7 +305,7 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 	}
 }
 
-UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D CurrentPlacementPosition, TArray<AZone*> LevelZoneTiles)
+UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D CurrentPlacementPosition)
 {
 	/**
 	* The Edge colours to match a Zone against, to find a suitable Zone for this CurrentPlacementPosition.
@@ -307,17 +315,12 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	* Third element: South Edge.
 	* Fourth element: West Edge.
 	*/
-	std::vector<FPSLevelGeneratorEdge::EdgeColour> TargetEdgeColours = 
+	TargetEdgeColours = 
 		std::vector<FPSLevelGeneratorEdge::EdgeColour>(size_t(AZone::DEFAULT_ZONE_EDGE_COUNT));
-
-	// The Zone sub-set to choose a Zone-tile from:
-	TArray<AZone*> ZoneSubSet;
-	// Make sure the sub-set is clear (so as to not chooose an invalid zone):
-	ZoneSubSet.Empty();
 
 	// Then fill it with all of the zones (these will be narrowed down to the
 	// final choice for this space, later):
-	ZoneSubSet = LevelZoneTiles;
+	ZoneSubSet = LevelZones;
 
 	// If this Zone is to be placed against an edge of
 	// the level generation area, then the tile will 
@@ -392,7 +395,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		bool ZoneMatchesToTargetEdgeColours = true;
 
 		// To check each EdgeColour against CurrentZoneEdgeColours:
-		for (int TargetEdgeColoursIterator = 0; TargetEdgeColoursIterator < TargetEdgeColours.size();
+		for (int TargetEdgeColoursIterator = 0; TargetEdgeColoursIterator < TargetEdgeColours.size() - 1;
 			TargetEdgeColoursIterator++)
 		{
 			if (TargetEdgeColours[TargetEdgeColoursIterator] > FPSLevelGeneratorEdge::EdgeColour::Grey - 1)
@@ -424,12 +427,12 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	}
 	*/
 
-	int ZoneChoice = GetZoneChoiceIndex(ZoneSubSet, TargetEdgeColours);
+	int ZoneChoice = GetZoneChoiceIndex();
 	
 	// Return the Blueprint that represents this Zone:
-	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZoneTiles.Num(); ZoneBlueprintIterator++)
+	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZones.Num(); ZoneBlueprintIterator++)
 	{
-		if (ZoneSubSet[ZoneChoice]->GetName() == LevelZoneTiles[ZoneBlueprintIterator]->GetName())
+		if (ZoneSubSet[ZoneChoice]->GetName() == LevelZones[ZoneBlueprintIterator]->GetName())
 		{
 			PlacedLevelZones.Add(ZoneSubSet[ZoneChoice]);
 			return LevelZoneTileBlueprints[ZoneBlueprintIterator];
@@ -442,8 +445,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 /**
 	RESOLVE ISSUES WITH THIS FUNCTION'S DETERMINATION OF MATCHING EDGE TILES!!!IFAH*_FPYAW
 */
-int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubsetReference,
-	std::vector<FPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference)
+int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex()
 {
 	// The return value:
 	int NewZoneChoice = -1;
@@ -476,44 +478,49 @@ int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubse
 	* Third element: South Edge.
 	* Fourth element: West Edge.
 	*/
-	for (int CurrentEdgePosition = TargetEdgeColoursReference.size(); CurrentEdgePosition > 0;
+	for (int CurrentEdgePosition = TargetEdgeColours.size() - 1; CurrentEdgePosition > 0;
 		CurrentEdgePosition--)
-	{
-		RNGResult = RandomDistribution(RNG);
+	{		
 		// Match against colourless:
-		if (TargetEdgeColoursReference[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Colourless)
+		if (TargetEdgeColours[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Colourless)
 		{
-			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstColourless(ZoneSubsetReference, CurrentEdgePosition);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstColourless(RNGResult);
 		}
 		// Match against blue:
-		else if (TargetEdgeColoursReference[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Blue)
+		else if (TargetEdgeColours[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Blue)
 		{
-			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstBlue(ZoneSubsetReference, CurrentEdgePosition);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstBlue(RNGResult);
 		}
 		// Match against green:
-		else if (TargetEdgeColoursReference[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Green)
+		else if (TargetEdgeColours[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Green)
 		{
-			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstGreen(ZoneSubsetReference, CurrentEdgePosition);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstGreen(RNGResult);
 		}
 		// Match against red:
-		else if (TargetEdgeColoursReference[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Red)
+		else if (TargetEdgeColours[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Red)
 		{
-			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstRed(ZoneSubsetReference, CurrentEdgePosition);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstRed(RNGResult);
 		}
 		// Match against grey:
-		else if (TargetEdgeColoursReference[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Grey)
+		else if (TargetEdgeColours[CurrentEdgePosition] == FPSLevelGeneratorEdge::EdgeColour::Grey)
 		{
-			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstGrey(ZoneSubsetReference, CurrentEdgePosition);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[CurrentEdgePosition] = MatchAgainstGrey(RNGResult);
 		}
 	}
 
 	// Make sure a colourless edge has not been chosen (as there are no tiles with a colourless edge):
-	for (int MatchingEdgeColoursIterator = 0; MatchingEdgeColoursIterator < MatchingEdgeColours.size();
+	for (int MatchingEdgeColoursIterator = 0; MatchingEdgeColoursIterator < MatchingEdgeColours.size() - 1;
 		MatchingEdgeColoursIterator++)
 	{
 		if (MatchingEdgeColours[MatchingEdgeColoursIterator] == FPSLevelGeneratorEdge::EdgeColour::Colourless)
 		{
-			MatchingEdgeColours[MatchingEdgeColoursIterator] = MatchAgainstColourless(ZoneSubsetReference, RNGResult);
+			RNGResult = RandomDistribution(RNG);
+			MatchingEdgeColours[MatchingEdgeColoursIterator] = MatchAgainstColourless(RNGResult);
 		}
 	}
 
@@ -523,13 +530,14 @@ int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubse
 	int MatchingEdgeCount = 0;
 	
 	// For the indices of the edges to be considered,
-	// if no absolute match has been found (with 
-	// the key in this map indicating the tile index
-	// and the value indicating the number of matching
-	// edges):
-	std::map<int, int> ConsideredEdges;
+	// if no absolute match has been found:
+	std::vector<int> ConsideredEdgeIndices;
+	// The indices of these vectors will match-up,
+	// so the edge at a certain index will have a 
+	// count of edges that match to the MatchingEdgeColours:
+	std::vector<int> ConsideredEdgeCount;
 
-	for (int ZoneTileEdgeColoursIterator = 0; ZoneTileEdgeColoursIterator < ZonesEdgeColours.AllEdgeColours.size();
+	for (int ZoneTileEdgeColoursIterator = 0; ZoneTileEdgeColoursIterator < ZonesEdgeColours.AllEdgeColours.size() - 1;
 		ZoneTileEdgeColoursIterator++)
 	{
 		MatchingEdgeCount = 0;
@@ -556,7 +564,8 @@ int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubse
 		}
 		else if (MatchingEdgeCount >= INCOMPLETE_MATCH_THRESHOLD)
 		{
-			ConsideredEdges.insert(std::pair<int, int>(ZoneTileEdgeColoursIterator, MatchingEdgeCount));
+			ConsideredEdgeIndices.push_back(ZoneTileEdgeColoursIterator);
+			ConsideredEdgeCount.push_back(MatchingEdgeCount);
 		}
 	}
 
@@ -565,38 +574,30 @@ int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubse
 	// ConsideredEdges:
 	
 	if (NewZoneChoice == -1)
-	{
-		// Use RandomDistribution and RNG to choose from ClosestMatchingEdges:
-		RandomDistribution = std::uniform_int_distribution<int>(0,
-			ZonesEdgeColours.AllEdgeColours.size() - 1);
-		RNG.seed(time(NULL));
-		RandomDistribution(RNG);
-
-		NewZoneChoice = RandomDistribution(RNG);
-		/**
-		ISSUE HERE SEEMS TO BE THE USE OF AUTO OR AN ITERATOR,
-		RESOLVE THISG(£UAGUA"(G"UA(
+	{	
+		//ISSUE HERE SEEMS TO BE THE USE OF AUTO OR AN ITERATOR,
+		//RESOLVE THISG(£UAGUA"(G"UA(
 		// Only for the indices:
 		std::vector<int> ClosestMatchingEdges;
 		int HighestMatchingEdgeCount = 0;
 
-		for (auto ConsideredEdgesIterator = ConsideredEdges.begin(); 
-			ConsideredEdgesIterator != ConsideredEdges.end();
-			ConsideredEdgesIterator++)
+		// Get the highest number of matching edges...
+		for (int ConsideredEdgeCountIterator = 0; ConsideredEdgeCountIterator <
+			ConsideredEdgeCount.size() - 1; ConsideredEdgeCountIterator++)
 		{
-			if (HighestMatchingEdgeCount < ConsideredEdgesIterator->second)
+			if (HighestMatchingEdgeCount < ConsideredEdgeCount[ConsideredEdgeCountIterator])
 			{
-				HighestMatchingEdgeCount = ConsideredEdgesIterator->second;
+				HighestMatchingEdgeCount = ConsideredEdgeCount[ConsideredEdgeCountIterator];
 			}			
 		}
 
-		for (auto ConsideredEdgesIterator = ConsideredEdges.begin();
-			ConsideredEdgesIterator != ConsideredEdges.end();
-			ConsideredEdgesIterator++)
+		// ...then add the index of each edge to ClosestMatchingEdges:
+		for (int ConsideredEdgeCountIterator = 0; ConsideredEdgeCountIterator <
+			ConsideredEdgeIndices.size() - 1; ConsideredEdgeCountIterator++)
 		{
-			if (ConsideredEdgesIterator->second == HighestMatchingEdgeCount)
+			if (ConsideredEdgeCount[ConsideredEdgeCountIterator] == HighestMatchingEdgeCount)
 			{
-				ClosestMatchingEdges.push_back(ConsideredEdgesIterator->first);
+				ClosestMatchingEdges.push_back(ConsideredEdgeIndices[ConsideredEdgeCountIterator]);
 			}			
 		}
 
@@ -607,36 +608,16 @@ int UBalancedFPSLevelGeneratorTool::GetZoneChoiceIndex(TArray<AZone*>& ZoneSubse
 		RandomDistribution(RNG);
 
 		NewZoneChoice = ClosestMatchingEdges[RandomDistribution(RNG)];
-		*/
 	}
 	
 	return NewZoneChoice;
 }
 
-void UBalancedFPSLevelGeneratorTool::UpdateValidZonesForPlacement(TArray<AZone*>& ZoneSubsetReference,
-	FPSLevelGeneratorEdge::EdgeColour TargetEdgeColour, int CurrentEdgePosition)
-{
-	// Check if there is a match against the current edge-colour:
-	for (int ZoneIterator = 0; ZoneIterator < ZoneSubsetReference.Num(); ZoneIterator++)
-	{
-		if (ZoneSubsetReference[ZoneIterator]->GetZoneEdgeColours()[CurrentEdgePosition]
-			!= TargetEdgeColour)
-		{
-			ZoneSubsetReference[ZoneIterator]->SetZoneValidForPlacement(false);			
-		}
-		else if (ZoneSubsetReference[ZoneIterator]->GetZoneEdgeColours()[CurrentEdgePosition]
-			== TargetEdgeColour)
-		{
-			ZoneSubsetReference[ZoneIterator]->SetZoneValidForPlacement(true);
-		}
-	}
-}
-
 // For matching against certain Edges:
-FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstColourless(TArray<AZone*>& ZoneSubsetReference, int RNGResult)
+FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstColourless(int RNGResult)
 {
 	// The colour to match against this colour, as per what the RNGResult is:
-	FPSLevelGeneratorEdge::EdgeColour ColourResult;
+	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
 	// Remove all Zones without a blue Edge at CurrentEdgePosition:
 	if (RNGResult < COLOURLESS_TO_BLUE)
@@ -665,10 +646,10 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstCo
 	return ColourResult;
 }
 
-FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGrey(TArray<AZone*>& ZoneSubsetReference, int RNGResult)
+FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGrey(int RNGResult)
 {
 	// The colour to match against this colour, as per what the RNGResult is:
-	FPSLevelGeneratorEdge::EdgeColour ColourResult;
+	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
 	// Remove all Zones without a blue Edge at CurrentEdgePosition:
 	if (RNGResult < GREY_TO_BLUE)
@@ -697,10 +678,10 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGr
 	return ColourResult;
 }
 
-FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstRed(TArray<AZone*>& ZoneSubsetReference, int RNGResult)
+FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstRed(int RNGResult)
 {
 	// The colour to match against this colour, as per what the RNGResult is:
-	FPSLevelGeneratorEdge::EdgeColour ColourResult;
+	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
 	// Remove all Zones without a blue Edge at CurrentEdgePosition:
 	if (RNGResult < RED_TO_BLUE)
@@ -730,10 +711,10 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstRe
 	return ColourResult;
 }
 
-FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGreen(TArray<AZone*>& ZoneSubsetReference, int RNGResult)
+FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGreen(int RNGResult)
 {
 	// The colour to match against this colour, as per what the RNGResult is:
-	FPSLevelGeneratorEdge::EdgeColour ColourResult;
+	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
 	// Remove all Zones without a blue Edge at CurrentEdgePosition:
 	if (RNGResult < GREEN_TO_BLUE)
@@ -763,10 +744,10 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGr
 	return ColourResult;
 }
 
-FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstBlue(TArray<AZone*>& ZoneSubsetReference, int RNGResult)
+FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstBlue(int RNGResult)
 {
 	// The colour to match against this colour, as per what the RNGResult is:
-	FPSLevelGeneratorEdge::EdgeColour ColourResult;
+	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
 	// Remove all Zones without a green Edge at CurrentEdgePosition:
 	if (RNGResult < BLUE_TO_GREEN)

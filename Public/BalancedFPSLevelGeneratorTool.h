@@ -57,7 +57,7 @@ public:
 	/** Standard constructor. */
 	UBalancedFPSLevelGeneratorTool();
 
-	/** Execute the generation algorithms. */
+	/** Execute the generation algorithm. */
 	UFUNCTION(Exec)
 	void GenerateLevel();
 
@@ -106,28 +106,17 @@ private:
 	void AddZonesToLevelGenerationArea();
 
 	/** For determining which tile to use. */
-	class UBlueprint* GetSuitableZoneTile(FVector2D CurrentPlacementPosition, TArray<class AZone*> LevelZoneTiles);
+	class UBlueprint* GetSuitableZoneTile(FVector2D CurrentPlacementPosition);
 
 	/** For getting an index of the Zone to use. */
-	int GetZoneChoiceIndex(TArray<AZone*>& ZoneSubsetReference,
-		std::vector<FPSLevelGeneratorEdge::EdgeColour>& TargetEdgeColoursReference);
-
-	/** To remove zones that would not match up to the select edge-comparison. */
-	void UpdateValidZonesForPlacement(TArray<AZone*>& ZoneSubsetReference,
-		FPSLevelGeneratorEdge::EdgeColour TargetEdgeColour,
-		int CurrentEdgePosition);
+	int GetZoneChoiceIndex();
 
 	/** Match against Edges of a certain colour. */
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstColourless(TArray<AZone*>& ZoneSubsetReference,
-		 int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGrey(TArray<AZone*>& ZoneSubsetReference,
-		 int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstRed(TArray<AZone*>& ZoneSubsetReference,
-		 int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGreen(TArray<AZone*>& ZoneSubsetReference,
-		 int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstBlue(TArray<AZone*>& ZoneSubsetReference,
-		 int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstColourless(int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGrey(int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstRed(int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGreen(int RNGResult);
+	FPSLevelGeneratorEdge::EdgeColour MatchAgainstBlue(int RNGResult);
 
 	// Properties:
 
@@ -143,6 +132,15 @@ private:
 
 	/** All of the Zone Blueprints (Wang Tiles) to be used in level generation. */
 	TArray<UBlueprint*> LevelZoneTileBlueprints;
+
+	/** For the Zone Blueprints to spawn. */
+	TArray<AZone*> LevelZones;
+
+	/** For the subset of zones to pick from. */
+	TArray<AZone*> ZoneSubSet;
+
+	/** For the edge-colours of a Zone to match against. */
+	std::vector<FPSLevelGeneratorEdge::EdgeColour> TargetEdgeColours;
 
 	/** For all of the zones placed in the level (from the LevelZoneTileBlueprints set). */
 	TArray<AZone*> PlacedLevelZones;
@@ -178,30 +176,30 @@ private:
 	const int COLOURLESS_TO_GREY = 10;
 
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 5;
-	const int BLUE_TO_GREEN = 15;
-	const int BLUE_TO_RED = 65;
-	const int BLUE_TO_GREY = 10;
-	const int BLUE_TO_COLOURLESS = 5;
+	const int BLUE_TO_BLUE = 50;
+	const int BLUE_TO_GREEN = 0;
+	const int BLUE_TO_RED = 0;
+	const int BLUE_TO_GREY = 0;
+	const int BLUE_TO_COLOURLESS = 50;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 1;
-	const int GREEN_TO_GREEN = 10;
-	const int GREEN_TO_RED = 80;
-	const int GREEN_TO_GREY = 6;
-	const int GREEN_TO_COLOURLESS = 3;
+	const int GREEN_TO_BLUE = 0;
+	const int GREEN_TO_GREEN = 5;
+	const int GREEN_TO_RED = 75;
+	const int GREEN_TO_GREY = 10;
+	const int GREEN_TO_COLOURLESS = 10;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 3;
-	const int RED_TO_GREEN = 6;
-	const int RED_TO_RED = 80;
+	const int RED_TO_BLUE = 0;
+	const int RED_TO_GREEN = 5;
+	const int RED_TO_RED = 75;
 	const int RED_TO_GREY = 10;
-	const int RED_TO_COLOURLESS = 1;
+	const int RED_TO_COLOURLESS = 10;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 1;
-	const int GREY_TO_GREEN = 3;
-	const int GREY_TO_RED = 90;
+	const int GREY_TO_BLUE = 0;
+	const int GREY_TO_GREEN = 5;
+	const int GREY_TO_RED = 85;
 	const int GREY_TO_GREY = 5;
-	const int GREY_TO_COLOURLESS = 1;
+	const int GREY_TO_COLOURLESS = 5;
 };
