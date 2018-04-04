@@ -229,10 +229,13 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 	UGameplayStatics::GetAllActorsOfClass(GEditor->GetEditorWorldContext()
 		.World()->GetCurrentLevel(), AZone::StaticClass(), ActorZones);
 
-	// Remove all the Zone Blueprints that have no tag:
+	// Remove all the Zone Blueprints that have no 'TileSpawnBlueprint' tag:
 	for (int ActorZonesIterator = 0; ActorZonesIterator < ActorZones.Num() - 1; ActorZonesIterator++)
 	{
-
+		if (ActorZones[ActorZonesIterator]->Tags.Find("TileSpawnBlueprint") == INDEX_NONE)
+		{
+			ActorZones.RemoveAt(ActorZonesIterator, 1, true);
+		}
 	}
 	
 	// Store the zones:

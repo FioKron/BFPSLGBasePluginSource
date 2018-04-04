@@ -197,4 +197,11 @@ private:
 	const FName WANG_TILE_NINE = "WangTile9";
 	const FName WANG_TILE_TEN = "WangTile10";
 	const FName WANG_TILE_ELEVEN = "WangTile11";
+	const FName WANG_TILE_TWELVE = "WangTile12";
+	const FName WANG_TILE_THIRTEEN = "WangTile13";
+	const FName WANG_TILE_FOURTEEN = "WangTile14";
+	const FName WANG_TILE_FIFTHTEEN = "WangTile15";
+	const FName WANG_TILE_SIXTEEN = "WangTile16";
+	const FName WANG_TILE_SEVENTEEN = "WangTile17";
+	const FName WANG_TILE_EIGHTTEEN = "WangTile18";
 };

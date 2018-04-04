@@ -162,9 +162,58 @@ void AZone::DetermineZoneEdgesColour()
 	else if (Tags.Contains(WANG_TILE_ELEVEN))
 	{
 		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
-		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Green);
 		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Grey);
+	}
+	else if (Tags.Contains(WANG_TILE_TWELVE))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (Tags.Contains(WANG_TILE_THIRTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (Tags.Contains(WANG_TILE_FOURTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (Tags.Contains(WANG_TILE_FIFTHTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (Tags.Contains(WANG_TILE_SIXTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (Tags.Contains(WANG_TILE_SEVENTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Red);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
+	else if (Tags.Contains(WANG_TILE_EIGHTTEEN))
+	{
+		NorthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Grey);
+		EastEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
+		SouthEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Green);
+		WestEdge.InitialiseEdgeColour(FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
 
 	// Make sure to set ZoneEdgeColours up correctly as well:
