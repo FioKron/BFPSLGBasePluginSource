@@ -150,7 +150,8 @@ private:
 
 	// Constant Values:
 
-	const int TOTAL_ZONE_BLUEPRINT_COUNT = 11;
+	/** For a count of all of the Blueprints that represent Zones. */
+	const int TOTAL_ZONE_BLUEPRINT_COUNT = 18;
 
 	/** 
 	* To refer to the dimensions of the panels/tiles.
@@ -176,30 +177,26 @@ private:
 	const int COLOURLESS_TO_GREY = 10;
 
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 50;
-	const int BLUE_TO_GREEN = 0;
-	const int BLUE_TO_RED = 0;
-	const int BLUE_TO_GREY = 0;
-	const int BLUE_TO_COLOURLESS = 50;
+	const int BLUE_TO_BLUE = 85;
+	const int BLUE_TO_GREEN = 5;
+	const int BLUE_TO_RED = 5;
+	const int BLUE_TO_GREY = 5;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 0;
-	const int GREEN_TO_GREEN = 5;
+	const int GREEN_TO_BLUE = 5;
+	const int GREEN_TO_GREEN = 10;
 	const int GREEN_TO_RED = 75;
 	const int GREEN_TO_GREY = 10;
-	const int GREEN_TO_COLOURLESS = 10;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 0;
-	const int RED_TO_GREEN = 5;
+	const int RED_TO_BLUE = 5;
+	const int RED_TO_GREEN = 10;
 	const int RED_TO_RED = 75;
 	const int RED_TO_GREY = 10;
-	const int RED_TO_COLOURLESS = 10;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 0;
+	const int GREY_TO_BLUE = 5;
 	const int GREY_TO_GREEN = 5;
 	const int GREY_TO_RED = 85;
 	const int GREY_TO_GREY = 5;
-	const int GREY_TO_COLOURLESS = 5;
 };

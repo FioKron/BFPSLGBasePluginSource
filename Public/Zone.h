@@ -123,10 +123,6 @@ public:
 
 	/** For proper initialisation. */
 	void InitialiseZone();
-
-	// Set methods:
-
-	void SetZoneValidForPlacement(bool NewZoneValidForPlacement);
 	
 	// Get functions:
 
@@ -141,8 +137,6 @@ public:
 
 	std::vector<FPSLevelGeneratorEdge::EdgeColour> GetZoneEdgeColours();
 
-	bool GetZoneValidForPlacement();
-
 	//UFUNCTION(BlueprintCallable, Category = "Zone Content")
 	//TArray<UActorComponent*> GetZoneObjects();
 
@@ -155,6 +149,12 @@ private:
 	* to find the determine the colour of this Zone's Edges.
 	*/
 	void DetermineZoneEdgesColour();
+
+	/** For setting all the edge colours. */
+	void InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour NorthEdgeColour,
+		FPSLevelGeneratorEdge::EdgeColour EastEdgeColour,
+		FPSLevelGeneratorEdge::EdgeColour SouthEdgeColour,
+		FPSLevelGeneratorEdge::EdgeColour WestEdgeColour);
 
 	// Properties:
 
@@ -169,17 +169,6 @@ private:
 
 	/** To hold all of the objects in the Zone. */
 	TArray<UStaticMeshComponent*> ZoneObjects;
-
-	/** 
-	* For avoid calling the update functions for every
-	* call of Tick().
-	*/
-	float TickTimer;
-
-	// Flags:
-
-	// For if it is valid to place this zone:
-	bool ZoneValidForPlacement;
 
 	// Constant Values:
 

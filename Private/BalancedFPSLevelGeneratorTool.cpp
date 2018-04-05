@@ -20,7 +20,7 @@
 #include "time.h"
 
 // For other STL Containers:
-#include <map>
+#include <set>
 
 
 // Initialise:
@@ -31,13 +31,12 @@ UBalancedFPSLevelGeneratorTool::UBalancedFPSLevelGeneratorTool()
 		TEXT("Blueprint'/Game/BalancedFPSLevelGeneratorAssets/Blueprints/WallPanel.WallPanel'"))
 		.Object;
 
-	for (int ZoneBlueprintCounter = 0; ZoneBlueprintCounter < TOTAL_ZONE_BLUEPRINT_COUNT;
+	for (int ZoneBlueprintCounter = 1; ZoneBlueprintCounter < TOTAL_ZONE_BLUEPRINT_COUNT;
 		ZoneBlueprintCounter++)
 	{
 		FString IncrementalPathString = "Blueprint'/Game/BalancedFPSLevelGeneratorAssets/Blueprints/WangTiles/";
-		// As ZoneBlueprintCounter starts at 0, add one to it, when building this FString:
-		IncrementalPathString.Append(FString("WangTile") + FString::FromInt(ZoneBlueprintCounter + 1) + FString(".WangTile") +
-			FString::FromInt(ZoneBlueprintCounter + 1) + FString("'"));
+		IncrementalPathString.Append(FString("WangTile") + FString::FromInt(ZoneBlueprintCounter) + FString(".WangTile") +
+			FString::FromInt(ZoneBlueprintCounter) + FString("'"));
 		LevelZoneTileBlueprints.Add(ConstructorHelpers::FObjectFinder<UBlueprint>(*IncrementalPathString)
 			.Object);
 	}
@@ -622,28 +621,33 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstCo
 	// The colour to match against this colour, as per what the RNGResult is:
 	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
-	// Remove all Zones without a blue Edge at CurrentEdgePosition:
-	if (RNGResult < COLOURLESS_TO_BLUE)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-	// Remove all Zones without a green Edge at CurrentEdgePosition:
-	else if (RNGResult >= COLOURLESS_TO_BLUE &&
-		RNGResult < COLOURLESS_TO_BLUE + COLOURLESS_TO_GREEN)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
-	}
-	// Remove all Zones without a red Edge at CurrentEdgePosition:
-	else if (RNGResult >= COLOURLESS_TO_BLUE + COLOURLESS_TO_GREEN &&
-		RNGResult < COLOURLESS_TO_BLUE + COLOURLESS_TO_GREEN + COLOURLESS_TO_RED)
+	// Put the constant values into a vector to sort them by descending order
+	// (to compare them against the result, no matter the values of these constant members):
+	std::vector<int> ColourlessRangeValues = { COLOURLESS_TO_BLUE, COLOURLESS_TO_GREEN, COLOURLESS_TO_GREY,
+	COLOURLESS_TO_RED };
+
+	// Red edge:
+	if (RNGResult < ColourlessRangeValues[3])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Red;
 	}
-	// Remove all Zones without a grey Edge at CurrentEdgePosition:
-	else if (RNGResult >= COLOURLESS_TO_BLUE + COLOURLESS_TO_GREEN + COLOURLESS_TO_RED &&
-		RNGResult < COLOURLESS_TO_BLUE + COLOURLESS_TO_GREEN + COLOURLESS_TO_RED + COLOURLESS_TO_GREY)
+	// Grey edge:
+	else if (RNGResult >= ColourlessRangeValues[3] &&
+		RNGResult < ColourlessRangeValues[3] + ColourlessRangeValues[2])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Grey;
+	}
+	// Green edge:
+	else if (RNGResult >= ColourlessRangeValues[3] + ColourlessRangeValues[2] &&
+		RNGResult < ColourlessRangeValues[3] + ColourlessRangeValues[2] + ColourlessRangeValues[1])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+	}
+	// Blue edge:
+	else if (RNGResult >= ColourlessRangeValues[3] + ColourlessRangeValues[2] +
+		ColourlessRangeValues[1])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	return ColourResult;
@@ -654,28 +658,33 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGr
 	// The colour to match against this colour, as per what the RNGResult is:
 	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
-	// Remove all Zones without a blue Edge at CurrentEdgePosition:
-	if (RNGResult < GREY_TO_BLUE)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-	// Remove all Zones without a green Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREY_TO_BLUE &&
-		RNGResult < GREY_TO_BLUE + GREY_TO_GREEN)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
-	}
-	// Remove all Zones without a red Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREY_TO_BLUE + GREY_TO_GREEN &&
-		RNGResult < GREY_TO_BLUE + GREY_TO_GREEN + GREY_TO_RED)
+	// Put the constant values into a vector to sort them by descending order
+	// (to compare them against the result, no matter the values of these constant members):
+	std::vector<int> GreyRangeValues = { GREY_TO_BLUE, GREY_TO_GREEN, GREY_TO_GREY,
+		GREY_TO_RED };
+
+	// Red edge:
+	if (RNGResult < GreyRangeValues[0])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Red;
 	}
-	// Remove all Zones without a grey Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREY_TO_BLUE + GREY_TO_GREEN + GREY_TO_RED &&
-		RNGResult < GREY_TO_BLUE + GREY_TO_GREEN + GREY_TO_RED + GREY_TO_GREY)
+	// Grey edge:
+	else if (RNGResult >= GreyRangeValues[0] &&
+		RNGResult < GreyRangeValues[0] + GreyRangeValues[1])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Grey;
+	}
+	// Green edge:
+	else if (RNGResult >= GreyRangeValues[0] + GreyRangeValues[1] &&
+		RNGResult < GreyRangeValues[0] + GreyRangeValues[1] + GreyRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+	}
+	// Blue edge:
+	else if (RNGResult >= GreyRangeValues[0] + GreyRangeValues[1] +
+		GreyRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	return ColourResult;
@@ -686,29 +695,33 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstRe
 	// The colour to match against this colour, as per what the RNGResult is:
 	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
-	// Remove all Zones without a blue Edge at CurrentEdgePosition:
-	if (RNGResult < RED_TO_BLUE)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-	// Remove all Zones without a green Edge at CurrentEdgePosition:
-	else if (RNGResult >= RED_TO_BLUE &&
-		RNGResult < RED_TO_BLUE + RED_TO_GREEN)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
-	}
-	// Remove all Zones without a red Edge at CurrentEdgePosition:
-	else if (RNGResult >= RED_TO_BLUE + RED_TO_GREEN &&
-		RNGResult < RED_TO_BLUE + RED_TO_GREEN + RED_TO_RED)
+	// Put the constant values into a vector to sort them by descending order
+	// (to compare them against the result, no matter the values of these constant members):
+	std::vector<int> RedRangeValues = { RED_TO_BLUE, RED_TO_GREEN, RED_TO_GREY,
+		RED_TO_RED };
+
+	// Red edge:
+	if (RNGResult < RedRangeValues[0])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Red;
 	}
-	// Remove all Zones without a grey Edge at CurrentEdgePosition:
-	else if (RNGResult >= RED_TO_BLUE + RED_TO_GREEN + RED_TO_RED &&
-		RNGResult < RED_TO_BLUE + RED_TO_GREEN + RED_TO_RED + 
-		RED_TO_GREY + RED_TO_COLOURLESS)
+	// Grey edge:
+	else if (RNGResult >= RedRangeValues[0] &&
+		RNGResult < RedRangeValues[0] + RedRangeValues[1])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Grey;
+	}
+	// Green edge:
+	else if (RNGResult >= RedRangeValues[0] + RedRangeValues[1] &&
+		RNGResult < RedRangeValues[0] + RedRangeValues[1] + RedRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+	}
+	// Blue edge:
+	else if (RNGResult >= RedRangeValues[0] + RedRangeValues[1] +
+		RedRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	return ColourResult;
@@ -719,29 +732,33 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstGr
 	// The colour to match against this colour, as per what the RNGResult is:
 	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
-	// Remove all Zones without a blue Edge at CurrentEdgePosition:
-	if (RNGResult < GREEN_TO_BLUE)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-	// Remove all Zones without a green Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREEN_TO_BLUE &&
-		RNGResult < GREEN_TO_BLUE + GREEN_TO_GREEN)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
-	}
-	// Remove all Zones without a red Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREEN_TO_BLUE + GREEN_TO_GREEN &&
-		RNGResult < GREEN_TO_BLUE + GREEN_TO_GREEN + GREEN_TO_RED)
+	// Put the constant values into a vector to sort them by descending order
+	// (to compare them against the result, no matter the values of these constant members):
+	std::vector<int> GreenRangeValues = { GREEN_TO_BLUE, GREEN_TO_GREEN, GREEN_TO_GREY,
+		GREEN_TO_RED };
+
+	// Red edge:
+	if (RNGResult < GreenRangeValues[0])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Red;
 	}
-	// Remove all Zones without a grey Edge at CurrentEdgePosition:
-	else if (RNGResult >= GREEN_TO_BLUE + GREEN_TO_GREEN + GREEN_TO_RED &&
-		RNGResult < GREEN_TO_BLUE + GREEN_TO_GREEN + GREEN_TO_RED +
-		GREEN_TO_GREY + GREEN_TO_COLOURLESS)
+	// Grey edge:
+	else if (RNGResult >= GreenRangeValues[0] &&
+		RNGResult < GreenRangeValues[0] + GreenRangeValues[1])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Grey;
+	}
+	// Green edge:
+	else if (RNGResult >= GreenRangeValues[0] + GreenRangeValues[1] &&
+		RNGResult < GreenRangeValues[0] + GreenRangeValues[1] + GreenRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+	}
+	// Blue edge:
+	else if (RNGResult >= GreenRangeValues[0] + GreenRangeValues[1] +
+		GreenRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	return ColourResult;
@@ -752,27 +769,33 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstBl
 	// The colour to match against this colour, as per what the RNGResult is:
 	FPSLevelGeneratorEdge::EdgeColour ColourResult = FPSLevelGeneratorEdge::EdgeColour::Colourless;
 
-	// Remove all Zones without a green Edge at CurrentEdgePosition:
-	if (RNGResult < BLUE_TO_GREEN)
+	// Put the constant values into a vector to sort them by descending order
+	// (to compare them against the result, no matter the values of these constant members):
+	std::vector<int> BlueRangeValues = { BLUE_TO_BLUE, BLUE_TO_GREEN, BLUE_TO_GREY,
+		BLUE_TO_RED };
+
+	// Blue edge:
+	if (RNGResult < BlueRangeValues[0])
 	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
-	// Remove all Zones without a red Edge at CurrentEdgePosition:
-	else if (RNGResult >= BLUE_TO_GREEN &&
-		RNGResult < BLUE_TO_GREEN + BLUE_TO_RED)
+	// Red edge:
+	else if (RNGResult >= BlueRangeValues[0] &&
+		RNGResult < BlueRangeValues[0] + BlueRangeValues[1])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Red;
 	}
-	// Remove all Zones without a grey Edge at CurrentEdgePosition:
-	else if (RNGResult >= BLUE_TO_GREEN + BLUE_TO_RED &&
-		RNGResult < BLUE_TO_GREEN + BLUE_TO_RED + BLUE_TO_GREY + BLUE_TO_COLOURLESS)
+	// Green edge:
+	else if (RNGResult >= BlueRangeValues[0] + BlueRangeValues[1] &&
+		RNGResult < BlueRangeValues[0] + BlueRangeValues[1] + BlueRangeValues[2])
+	{
+		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Green;
+	}
+	// Grey edge:
+	else if (RNGResult >= BlueRangeValues[0] + BlueRangeValues[1] +
+		BlueRangeValues[2])
 	{
 		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Grey;
-	}
-	// Remove all Zones without a blue Edge at CurrentEdgePosition:
-	else if (RNGResult >= 100 - BLUE_TO_BLUE)
-	{
-		ColourResult = FPSLevelGeneratorEdge::EdgeColour::Blue;
 	}
 
 	return ColourResult;
