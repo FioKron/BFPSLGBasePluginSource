@@ -150,6 +150,8 @@ private:
 
 	// Constant Values:
 
+	/** For the tag used to identify Blueprints already in the level, when it's loaded. */
+	const FName TILE_SPAWN_BLUEPRINT_TAG = "TileSpawnBlueprint";
 	/** For a count of all of the Blueprints that represent Zones. */
 	const int TOTAL_ZONE_BLUEPRINT_COUNT = 18;
 
@@ -160,8 +162,40 @@ private:
 	*/
 	const float DEFAULT_TILE_WIDTH = 100.0f;
 	const float DEFAULT_TILE_HEIGHT = 100.0f;
-	const float DEFAULT_TILE_DEPTH = 10.0f;
+	
+	/** 
+	* For the offset of the encapsulation pieces,
+	* from the level-generation area.
+	*/
+	const float DEFAULT_ENCAPSULATION_OFFSET = 10.0f;
 
+	// For choosing from a pre-defined set of zones:
+
+	const int FIRST_OPTION = 1;
+	const int SECOND_OPTION = 2;
+	const int THIRD_OPTION = 3;
+
+	// For the indices of the Zones (stored in a TArray):
+
+	const int ZONE_ONE_INDEX = 0;
+	const int ZONE_TWO_INDEX = 1;
+	const int ZONE_THREE_INDEX = 2;
+	const int ZONE_FOUR_INDEX = 3;
+	const int ZONE_FIVE_INDEX = 4;
+	const int ZONE_SIX_INDEX = 5;
+	const int ZONE_SEVEN_INDEX = 6;
+	const int ZONE_EIGHT_INDEX = 7;
+	const int ZONE_NINE_INDEX = 8;
+	const int ZONE_TEN_INDEX = 9;
+	const int ZONE_ELEVEN_INDEX = 10;
+	const int ZONE_TWELVE_INDEX = 11;
+	const int ZONE_THIRTEEN_INDEX = 12;
+	const int ZONE_FOURTEEN_INDEX = 13;
+	const int ZONE_FIFTHTEEN_INDEX = 14;
+	const int ZONE_SIXTEEN_INDEX = 15;
+	const int ZONE_SEVENTEEN_INDEX = 16;
+	const int ZONE_EIGHTEEN_INDEX = 17;
+	
 	/** 
 	* The number of edges that have to match,
 	* if there is no asbolute match.
@@ -171,32 +205,63 @@ private:
 	// Used in comparison between a Zone's Edges: 
 	
 	/** Colourless against another. */
-	const int COLOURLESS_TO_BLUE = 5;
-	const int COLOURLESS_TO_GREEN = 10;
-	const int COLOURLESS_TO_RED = 75;
-	const int COLOURLESS_TO_GREY = 10;
+	const int COLOURLESS_TO_BLUE = 0;
+	const int COLOURLESS_TO_GREEN = 0;
+	const int COLOURLESS_TO_RED = 100;
+	const int COLOURLESS_TO_GREY = 0;
 
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 85;
-	const int BLUE_TO_GREEN = 5;
-	const int BLUE_TO_RED = 5;
-	const int BLUE_TO_GREY = 5;
+	const int BLUE_TO_BLUE = 100;
+	const int BLUE_TO_GREEN = 0;
+	const int BLUE_TO_RED = 0;
+	const int BLUE_TO_GREY = 0;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 5;
-	const int GREEN_TO_GREEN = 10;
-	const int GREEN_TO_RED = 75;
-	const int GREEN_TO_GREY = 10;
+	const int GREEN_TO_BLUE = 0;
+	const int GREEN_TO_GREEN = 0;
+	const int GREEN_TO_RED = 100;
+	const int GREEN_TO_GREY = 0;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 5;
-	const int RED_TO_GREEN = 10;
-	const int RED_TO_RED = 75;
-	const int RED_TO_GREY = 10;
+	const int RED_TO_BLUE = 0;
+	const int RED_TO_GREEN = 0;
+	const int RED_TO_RED = 100;
+	const int RED_TO_GREY = 0;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 5;
-	const int GREY_TO_GREEN = 5;
-	const int GREY_TO_RED = 85;
-	const int GREY_TO_GREY = 5;
+	const int GREY_TO_BLUE = 0;
+	const int GREY_TO_GREEN = 0;
+	const int GREY_TO_RED = 100;
+	const int GREY_TO_GREY = 0;
 };
+// Previous values:
+
+/** Colourless against another. */
+//const int COLOURLESS_TO_BLUE = 5;
+//const int COLOURLESS_TO_GREEN = 10;
+//const int COLOURLESS_TO_RED = 75;
+//const int COLOURLESS_TO_GREY = 10;
+
+///** Blue against another. */
+//const int BLUE_TO_BLUE = 85;
+//const int BLUE_TO_GREEN = 5;
+//const int BLUE_TO_RED = 5;
+//const int BLUE_TO_GREY = 5;
+
+///** Green against another. */
+//const int GREEN_TO_BLUE = 5;
+//const int GREEN_TO_GREEN = 10;
+//const int GREEN_TO_RED = 75;
+//const int GREEN_TO_GREY = 10;
+
+///** Red against another. */
+//const int RED_TO_BLUE = 5;
+//const int RED_TO_GREEN = 10;
+//const int RED_TO_RED = 75;
+//const int RED_TO_GREY = 10;
+
+///** Grey against another. */
+//const int GREY_TO_BLUE = 5;
+//const int GREY_TO_GREEN = 5;
+//const int GREY_TO_RED = 85;
+//const int GREY_TO_GREY = 5;
