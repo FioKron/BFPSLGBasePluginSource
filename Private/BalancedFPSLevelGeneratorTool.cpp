@@ -219,10 +219,16 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 {
 	// For each Zone to use in initialisation:
 	static AActor* ZoneTile;
-	FVector DEFAULT_ZONE_SCALE = FVector(1.0f, 1.0f, 1.0f);
 
-	// To offset the placement of zones (to fall within the level generation area):
-	const FVector2D ZONE_POSITION_OFFSET = FVector2D(50.0f, 50.0f);
+	// Set-up the relative corner positions:
+	TopLeftCorner = FVector2D(LevelGenerationStartPoint.X + ZONE_POSITION_OFFSET.X,
+		LevelGenerationStartPoint.Y + ZONE_POSITION_OFFSET.Y);
+	TopRightCorner = FVector2D(LevelExtents.X - ZONE_POSITION_OFFSET.X,
+		LevelGenerationStartPoint.Y + ZONE_POSITION_OFFSET.Y);
+	BottomRightCorner = FVector2D(LevelExtents.X - ZONE_POSITION_OFFSET.X,
+		LevelExtents.Y - ZONE_POSITION_OFFSET.Y);
+	BottomLeftCorner = FVector2D(LevelGenerationStartPoint.X + ZONE_POSITION_OFFSET.X,
+		LevelExtents.Y - ZONE_POSITION_OFFSET.Y);
 
 	// For the Zone Blueprints, as Actors:
 	TArray<AActor*> ActorZones;
@@ -284,13 +290,13 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 
 				FTransform LevelZoneTransform = FTransform(ZoneRotation.Quaternion(), CurrentPosition, DEFAULT_ZONE_SCALE);
 				
-				// INVALID ACCESS OPERATION OCCURS HERE:
-				UBlueprint* ZoneTileBlueprint = GetSuitableZoneTile(FVector2D(CurrentPosition));
-
 				// Offset the X and Y components of the CurrentPosition:
-				LevelZoneTransform.SetComponents(LevelZoneTransform.GetRotation(), FVector(LevelZoneTransform.GetLocation().X + 
+				LevelZoneTransform.SetComponents(LevelZoneTransform.GetRotation(), FVector(LevelZoneTransform.GetLocation().X +
 					ZONE_POSITION_OFFSET.X, LevelZoneTransform.GetLocation().Y - ZONE_POSITION_OFFSET.Y, LevelZoneTransform.GetLocation().Z),
-					LevelZoneTransform.GetScale3D());
+					LevelZoneTransform.GetScale3D());			
+
+				// INVALID ACCESS OPERATION OCCURS HERE:
+				UBlueprint* ZoneTileBlueprint = GetSuitableZoneTile(FVector2D(LevelZoneTransform.GetLocation()));
 
 				ZoneTile = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
 					ZoneTileBlueprint, LevelZoneTransform, false);
@@ -377,22 +383,20 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// OF THE LEVEL GENERATION AREA!@GAWI
 
 	// Choose from Zones 1, 3 or 14:
-	if (CurrentPlacementPosition.X == LevelGenerationStartPoint.X &&
-		CurrentPlacementPosition.Y == LevelExtents.Y)
+	if (CurrentPlacementPosition == TopLeftCorner)
 	{
 		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
 		RNG.seed(time(NULL));
 		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_SIX_INDEX,
-			ZONE_SIXTEEN_INDEX };
-
+		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_THREE_INDEX,
+			ZONE_FOURTEEN_INDEX };
+		
 		ZoneChoice = ZoneIndices[RandomChoice];
 
 		PlacementInCornerOrAlongEdge = true;
 	}
 	// Choose from Zones 4, 14 or 15:
-	else if (CurrentPlacementPosition.X == LevelExtents.X - DEFAULT_TILE_WIDTH &&
-		CurrentPlacementPosition.Y == LevelExtents.Y)
+	else if (CurrentPlacementPosition == TopRightCorner)
 	{
 		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
 		RNG.seed(time(NULL));
@@ -405,27 +409,25 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		PlacementInCornerOrAlongEdge = true;
 	}
 	// Choose from Zones 5, 15 or 16:
-	else if (CurrentPlacementPosition.X == LevelExtents.X - DEFAULT_TILE_WIDTH &&
-		CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y + DEFAULT_TILE_WIDTH)
+	else if (CurrentPlacementPosition == BottomRightCorner)
 	{
 		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
 		RNG.seed(time(NULL));
 		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_THREE_INDEX,
-			ZONE_FOURTEEN_INDEX };
+		std::vector<int> ZoneIndices = { ZONE_FIVE_INDEX, ZONE_FIFTHTEEN_INDEX,
+			ZONE_SIXTEEN_INDEX };
 
 		ZoneChoice = ZoneIndices[RandomChoice];
 
 		PlacementInCornerOrAlongEdge = true;
 	}
 	// Choose from Zones 1, 6 or 16:
-	else if (CurrentPlacementPosition.X == LevelGenerationStartPoint.X &&
-		CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y + DEFAULT_TILE_WIDTH)
+	else if (CurrentPlacementPosition == BottomLeftCorner)
 	{
 		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
 		RNG.seed(time(NULL));
 		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_FIVE_INDEX, ZONE_FIFTHTEEN_INDEX,
+		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_SIX_INDEX,
 			ZONE_SIXTEEN_INDEX };
 
 		ZoneChoice = ZoneIndices[RandomChoice];

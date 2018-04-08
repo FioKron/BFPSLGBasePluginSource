@@ -155,6 +155,14 @@ private:
 	/** For a count of all of the Blueprints that represent Zones. */
 	const int TOTAL_ZONE_BLUEPRINT_COUNT = 18;
 
+	// Other default tile properties:
+
+	/** The default scale of Zones (can be adjusted for small */
+	FVector DEFAULT_ZONE_SCALE = FVector(1.0f, 1.0f, 1.0f);
+
+	/** To offset the placement of zones (to fall within the level generation area). */
+	const FVector2D ZONE_POSITION_OFFSET = FVector2D(50.0f, 50.0f);
+
 	/** 
 	* To refer to the dimensions of the panels/tiles.
 	* Taken from the values noted in the static-mesh
@@ -174,6 +182,14 @@ private:
 	const int FIRST_OPTION = 1;
 	const int SECOND_OPTION = 2;
 	const int THIRD_OPTION = 3;
+
+	// For the relative locations of the corners of a 
+	// level-generation area:
+
+	FVector2D TopLeftCorner;
+	FVector2D TopRightCorner;
+	FVector2D BottomRightCorner;
+	FVector2D BottomLeftCorner;
 
 	// For the indices of the Zones (stored in a TArray):
 
