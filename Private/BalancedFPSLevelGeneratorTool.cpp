@@ -31,7 +31,7 @@ UBalancedFPSLevelGeneratorTool::UBalancedFPSLevelGeneratorTool()
 		TEXT("Blueprint'/Game/BalancedFPSLevelGeneratorAssets/Blueprints/WallPanel.WallPanel'"))
 		.Object;
 
-	for (int ZoneBlueprintCounter = 1; ZoneBlueprintCounter < TOTAL_ZONE_BLUEPRINT_COUNT;
+	for (int ZoneBlueprintCounter = 1; ZoneBlueprintCounter < TOTAL_ZONE_BLUEPRINT_COUNT + 1;
 		ZoneBlueprintCounter++)
 	{
 		FString IncrementalPathString = "Blueprint'/Game/BalancedFPSLevelGeneratorAssets/Blueprints/WangTiles/";
@@ -332,41 +332,16 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	*/
 	TargetEdgeColours = 
 		std::vector<FPSLevelGeneratorEdge::EdgeColour>(size_t(AZone::DEFAULT_ZONE_EDGE_COUNT));
+	
 	// For the index to find the target Zone, from the array of Zones:
 	int ZoneChoice = 0;
+
+	// Only set to true if one of the below conditions is true:
+	bool PlacementInCornerOrAlongEdge = false;
 
 	// Then fill it with all of the zones (these will be narrowed down to the
 	// final choice for this space, later):
 	ZoneSubSet = LevelZones;
-
-	// If this Zone is to be placed against an edge of
-	// the level generation area, then the tile will 
-	// have to match 'pure' wall 'edges', as well as
-	// the Edge colour of any other adjacent Zones:
-
-	// South level-generation area 'edge':
-	if (CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y)
-	{
-		TargetEdgeColours[2] = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-
-	// North level-generation area 'edge':
-	if (CurrentPlacementPosition.Y == LevelExtents.Y)
-	{
-		TargetEdgeColours[0] = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-
-	// West level-generation area 'edge':
-	if (CurrentPlacementPosition.X == LevelGenerationStartPoint.X)
-	{
-		TargetEdgeColours[3] = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
-
-	// East level-generation area 'edge':
-	if (CurrentPlacementPosition.X == LevelExtents.X)
-	{
-		TargetEdgeColours[1] = FPSLevelGeneratorEdge::EdgeColour::Blue;
-	}
 
 	// Check to see if the function can return a value here:
 	
@@ -374,9 +349,6 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	std::default_random_engine RNG;
 	std::uniform_int_distribution<int> RandomDistribution;
 	RNG.seed(time(NULL));
-	
-	// Only set to true if one of the below conditions is true:
-	bool PlacementInCornerOrAlongEdge = false;
 
 	// ADD MORE COMBINATIONS!! GWAGIU*WA
 	// RESOLVE ISSUES WITH PLACEMENT OF ZONES IN THE CORNERS
@@ -435,6 +407,52 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		PlacementInCornerOrAlongEdge = true;
 	}
 
+	// If this Zone is to be placed against an edge of
+	// the level generation area, then the tile will 
+	// have to match 'pure' wall 'edges', as well as
+	// the Edge colour of any other adjacent Zones:
+
+	// If this area has already been deemed to be a corner,
+	// then skip these checks:
+	if (!PlacementInCornerOrAlongEdge)
+	{
+		// North level-generation area 'edge':
+		if (CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y + ZONE_POSITION_OFFSET.Y)
+		{
+			TargetEdgeColours[0] = FPSLevelGeneratorEdge::EdgeColour::Blue;
+			// So return from the function sooner:
+			ZoneChoice = ZONE_NINETEEN_INDEX;
+			PlacementInCornerOrAlongEdge = true;
+		}
+
+		// East level-generation area 'edge':
+		if (CurrentPlacementPosition.X == LevelExtents.X - ZONE_POSITION_OFFSET.X)
+		{
+			TargetEdgeColours[1] = FPSLevelGeneratorEdge::EdgeColour::Blue;
+			// So return from the function sooner:
+			ZoneChoice = ZONE_TWENTY_INDEX;
+			PlacementInCornerOrAlongEdge = true;
+		}
+
+		// South level-generation area 'edge':
+		if (CurrentPlacementPosition.Y == LevelExtents.Y - ZONE_POSITION_OFFSET.Y)
+		{
+			TargetEdgeColours[2] = FPSLevelGeneratorEdge::EdgeColour::Blue;
+			// So return from the function sooner:
+			ZoneChoice = ZONE_TWENTY_ONE_INDEX;
+			PlacementInCornerOrAlongEdge = true;
+		}
+
+		// West level-generation area 'edge':
+		if (CurrentPlacementPosition.X == LevelGenerationStartPoint.X + ZONE_POSITION_OFFSET.X)
+		{
+			TargetEdgeColours[3] = FPSLevelGeneratorEdge::EdgeColour::Blue;
+			// So return from the function sooner:
+			ZoneChoice = ZONE_TWENTY_TWO_INDEX;
+			PlacementInCornerOrAlongEdge = true;
+		}
+	}
+	
 	// A Zone will be placed in a corner or along an Edge of the level-generation area:
 	if (PlacementInCornerOrAlongEdge)
 	{

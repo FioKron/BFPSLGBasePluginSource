@@ -153,7 +153,7 @@ private:
 	/** For the tag used to identify Blueprints already in the level, when it's loaded. */
 	const FName TILE_SPAWN_BLUEPRINT_TAG = "TileSpawnBlueprint";
 	/** For a count of all of the Blueprints that represent Zones. */
-	const int TOTAL_ZONE_BLUEPRINT_COUNT = 18;
+	const int TOTAL_ZONE_BLUEPRINT_COUNT = 22;
 
 	// Other default tile properties:
 
@@ -211,6 +211,10 @@ private:
 	const int ZONE_SIXTEEN_INDEX = 15;
 	const int ZONE_SEVENTEEN_INDEX = 16;
 	const int ZONE_EIGHTEEN_INDEX = 17;
+	const int ZONE_NINETEEN_INDEX = 18;
+	const int ZONE_TWENTY_INDEX = 19;
+	const int ZONE_TWENTY_ONE_INDEX = 20;
+	const int ZONE_TWENTY_TWO_INDEX = 21;
 	
 	/** 
 	* The number of edges that have to match,
