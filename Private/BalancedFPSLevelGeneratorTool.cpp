@@ -93,112 +93,33 @@ void UBalancedFPSLevelGeneratorTool::EncapsulateLevelGenerationArea()
 
 	
 	// Offset by DEFAULT_ENCAPSULATION_OFFSET, to allow Zones to fill in these gaps:
-	for (float CurrentZPosition = 0; CurrentZPosition < DEFAULT_TILE_HEIGHT;
-		CurrentZPosition += DEFAULT_TILE_HEIGHT)
+	// Top and bottom faces:
+	for (float CurrentYPosition = LevelGenerationStartPoint.Y;
+		CurrentYPosition < LevelExtents.Y; CurrentYPosition +=
+		DEFAULT_TILE_WIDTH)
 	{
-		// Front face:
 		for (float CurrentXPosition = LevelGenerationStartPoint.X;
 			CurrentXPosition < LevelExtents.X; CurrentXPosition +=
 			DEFAULT_TILE_WIDTH)
 		{
-			FVector CurrentPosition = FVector(CurrentXPosition, 
-				LevelGenerationStartPoint.Y - DEFAULT_ENCAPSULATION_OFFSET, CurrentZPosition
-				- DEFAULT_ENCAPSULATION_OFFSET);
-			FRotator FrontFaceRotation = FRotator::ZeroRotator;
-
-			FTransform LevelPanelTransform = FTransform(FrontFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
-			
-			// *GEditor->GetEditorWorldContext().ExternalReferences[0] just to get the world context...
-			WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
-				WallPanelBlueprintAsset, LevelPanelTransform, false);
-			WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-			FrontFaceLoopCycleCount++;
-			//UGameplayStatics::FinishSpawningActor(WallPanelActor, LevelPanelTransform);
-		}
-
-		// Right face:
-		for (float CurrentYPosition = LevelGenerationStartPoint.Y;
-			CurrentYPosition < LevelExtents.Y; CurrentYPosition +=
-			DEFAULT_TILE_WIDTH)
-		{
-			FVector CurrentPosition = FVector(LevelGenerationStartPoint.X + LevelExtents.X + DEFAULT_ENCAPSULATION_OFFSET,
-				CurrentYPosition, CurrentZPosition - DEFAULT_ENCAPSULATION_OFFSET);
-			FRotator RightFaceRotation = FRotator(0.0f, 90.0f, 0.0f);
-
-			FTransform LevelPanelTransform = FTransform(RightFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
-
-			// *GEditor->GetEditorWorldContext().ExternalReferences[0] just to get the world context...
-			WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
-				WallPanelBlueprintAsset, LevelPanelTransform, false);
-			WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-			RightFaceLoopCycleCount++;
-		}
-
-		// Back face:
-		for (float CurrentXPosition = LevelGenerationStartPoint.X + LevelExtents.X;
-			CurrentXPosition > LevelGenerationStartPoint.X; CurrentXPosition -=
-			DEFAULT_TILE_WIDTH)
-		{
 			FVector CurrentPosition = FVector(CurrentXPosition,
-				LevelGenerationStartPoint.Y + LevelExtents.Y + DEFAULT_ENCAPSULATION_OFFSET,
-				CurrentZPosition - DEFAULT_ENCAPSULATION_OFFSET);
-			FRotator BackFaceRotation = FRotator(0.0f, 180.0f, 0.0f);
+				CurrentYPosition, 0.0f - DEFAULT_ENCAPSULATION_OFFSET);
+			// It seems rotation has been shuffled to the left, with a 
+			// wrap around (Z for Y, Y for X etc.) in UE4:
+			FRotator TopBottomFaceRotation = FRotator(0.0f, 0.0f, 90.0f);
 
-			FTransform LevelPanelTransform = FTransform(BackFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
+			FTransform LevelPanelTransform = FTransform(TopBottomFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
 
-			// *GEditor->GetEditorWorldContext().ExternalReferences[0] just to get the world context...
+			// For the bottom tile first...
 			WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
 				WallPanelBlueprintAsset, LevelPanelTransform, false);
 			WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-			BackFaceLoopCycleCount++;
-		}
-
-		// Left face:
-		for (float CurrentYPosition = LevelGenerationStartPoint.Y + LevelExtents.Y;
-			CurrentYPosition > LevelGenerationStartPoint.Y; CurrentYPosition -=
-			DEFAULT_TILE_WIDTH)
-		{
-			FVector CurrentPosition = FVector(LevelGenerationStartPoint.X - DEFAULT_ENCAPSULATION_OFFSET,
-				CurrentYPosition, CurrentZPosition - DEFAULT_ENCAPSULATION_OFFSET);
-			FRotator FrontFaceRotation = FRotator(0.0f, -90.0f, 0.0f);
-
-			FTransform LevelPanelTransform = FTransform(FrontFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
-
-			// *GEditor->GetEditorWorldContext().ExternalReferences[0] just to get the world context...
-			WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
+			// ...then the top tile:
+			FVector TopTilePosition = FVector(CurrentXPosition, CurrentYPosition, DEFAULT_TILE_HEIGHT - (DEFAULT_ENCAPSULATION_OFFSET / 2));
+			LevelPanelTransform.SetComponents(LevelPanelTransform.GetRotation(), TopTilePosition, LevelPanelTransform.GetScale3D());
+			WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(*GEditor->GetEditorWorldContext().ExternalReferences[0],
 				WallPanelBlueprintAsset, LevelPanelTransform, false);
 			WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-			LeftFaceLoopCycleCount++;
-		}
-
-		// Top and bottom faces:
-		for (float CurrentYPosition = LevelGenerationStartPoint.Y;
-			CurrentYPosition < LevelExtents.Y; CurrentYPosition +=
-			DEFAULT_TILE_WIDTH)
-		{			
-			for (float CurrentXPosition = LevelGenerationStartPoint.X;
-				CurrentXPosition < LevelExtents.X; CurrentXPosition +=
-				DEFAULT_TILE_WIDTH)
-			{
-				FVector CurrentPosition = FVector(CurrentXPosition,
-					CurrentYPosition, CurrentZPosition - DEFAULT_ENCAPSULATION_OFFSET);
-				// It seems rotation has been shuffled to the left, with a 
-				// wrap around (Z for Y, Y for X etc.) in UE4:
-				FRotator TopBottomFaceRotation = FRotator(0.0f, 0.0f, 90.0f);
-
-				FTransform LevelPanelTransform = FTransform(TopBottomFaceRotation.Quaternion(), CurrentPosition, DefaultRelativePanelScale);
-
-				// For the bottom tile first...
-				WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
-					WallPanelBlueprintAsset, LevelPanelTransform, false);
-				WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-				// ...then the top tile:
-				FVector TopTilePosition = FVector(CurrentXPosition, CurrentYPosition, CurrentZPosition + DEFAULT_TILE_HEIGHT + DEFAULT_ENCAPSULATION_OFFSET);
-				LevelPanelTransform.SetComponents(LevelPanelTransform.GetRotation(), TopTilePosition, LevelPanelTransform.GetScale3D());
-				WallPanelActor = UGameplayStatics::BeginSpawningActorFromBlueprint(*GEditor->GetEditorWorldContext().ExternalReferences[0],
-					WallPanelBlueprintAsset, LevelPanelTransform, false);
-				WallPanelActor->ExecuteConstruction(LevelPanelTransform, nullptr, nullptr, true);
-			}
 		}
 	}
 }
@@ -214,7 +135,6 @@ void UBalancedFPSLevelGeneratorTool::AddLightSourceToLevelGenerationArea()
 }
 
 // Now zones can be added to it (Wang Tiles):
-// ADD THE POSSIBLE ZONES FOR THE EDGES TO A MANUAL LIST!
 void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 {
 	// For each Zone to use in initialisation:
@@ -271,51 +191,43 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 	}
 
 	// The main loop to place the zones:
-	for (float CurrentZPosition = LevelGenerationStartPoint.Z;
-		CurrentZPosition < DEFAULT_TILE_HEIGHT; CurrentZPosition +=
-		DEFAULT_TILE_HEIGHT)
+	
+	// Work backwards from the last row:
+	for (float CurrentYPosition = LevelGenerationStartPoint.Y + LevelExtents.Y;
+		CurrentYPosition > LevelGenerationStartPoint.Y; CurrentYPosition -=
+		DEFAULT_TILE_WIDTH)
 	{
-		// Work backwards from the last row:
-		for (float CurrentYPosition = LevelGenerationStartPoint.Y + LevelExtents.Y;
-			CurrentYPosition > LevelGenerationStartPoint.Y; CurrentYPosition -=
+		for (float CurrentXPosition = LevelGenerationStartPoint.X;
+			CurrentXPosition < LevelExtents.X; CurrentXPosition +=
 			DEFAULT_TILE_WIDTH)
 		{
-			for (float CurrentXPosition = LevelGenerationStartPoint.X;
-				CurrentXPosition < LevelExtents.X; CurrentXPosition +=
-				DEFAULT_TILE_WIDTH)
+			FVector CurrentPosition = FVector(CurrentXPosition,
+				CurrentYPosition, DEFAULT_TILE_Z_POSITION);
+			FRotator ZoneRotation = FRotator(0.0f, 0.0f, 0.0f);
+
+			FTransform LevelZoneTransform = FTransform(ZoneRotation.Quaternion(), CurrentPosition, DEFAULT_ZONE_SCALE);
+
+			// Offset the X and Y components of the CurrentPosition:
+			LevelZoneTransform.SetComponents(LevelZoneTransform.GetRotation(), FVector(LevelZoneTransform.GetLocation().X +
+				ZONE_POSITION_OFFSET.X, LevelZoneTransform.GetLocation().Y - ZONE_POSITION_OFFSET.Y, LevelZoneTransform.GetLocation().Z),
+				LevelZoneTransform.GetScale3D());
+
+			// INVALID ACCESS OPERATION OCCURS HERE:
+			UBlueprint* ZoneTileBlueprint = GetSuitableZoneTile(FVector2D(LevelZoneTransform.GetLocation()));
+
+			ZoneTile = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
+				ZoneTileBlueprint, LevelZoneTransform, false);
+			// Nullify the ZoneTileBlueprint, so that it is set again:
+			ZoneTileBlueprint = nullptr;
+
+			// Sanity check:
+			if (ZoneTile)
 			{
-				FVector CurrentPosition = FVector(CurrentXPosition,
-					CurrentYPosition, CurrentZPosition);
-				FRotator ZoneRotation = FRotator(0.0f, 0.0f, 0.0f);
-
-				FTransform LevelZoneTransform = FTransform(ZoneRotation.Quaternion(), CurrentPosition, DEFAULT_ZONE_SCALE);
-				
-				// Offset the X and Y components of the CurrentPosition:
-				LevelZoneTransform.SetComponents(LevelZoneTransform.GetRotation(), FVector(LevelZoneTransform.GetLocation().X +
-					ZONE_POSITION_OFFSET.X, LevelZoneTransform.GetLocation().Y - ZONE_POSITION_OFFSET.Y, LevelZoneTransform.GetLocation().Z),
-					LevelZoneTransform.GetScale3D());			
-
-				// INVALID ACCESS OPERATION OCCURS HERE:
-				UBlueprint* ZoneTileBlueprint = GetSuitableZoneTile(FVector2D(LevelZoneTransform.GetLocation()));
-
-				ZoneTile = UGameplayStatics::BeginSpawningActorFromBlueprint(GEditor->GetEditorWorldContext().World()->GetCurrentLevel(),
-					ZoneTileBlueprint, LevelZoneTransform, false);
-				// Nullify the ZoneTileBlueprint, so that it is set again:
-				ZoneTileBlueprint = nullptr;
-
-				// Sanity check:
-				if (ZoneTile)
-				{
-					ZoneTile->ExecuteConstruction(LevelZoneTransform, nullptr, nullptr, true);
-				}				
-
-				int WHAT = 0;
-
-				printf("%d", WHAT);				
+				ZoneTile->ExecuteConstruction(LevelZoneTransform, nullptr, nullptr, true);
 			}
-		}	
+		}
 	}
-
+	
 	// Clear up the placed level Zones for the next level generated:
 	PlacedLevelZones.Empty();
 }
@@ -354,56 +266,28 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// RESOLVE ISSUES WITH PLACEMENT OF ZONES IN THE CORNERS
 	// OF THE LEVEL GENERATION AREA!@GAWI
 
-	// Choose from Zones 1, 3 or 14:
+	// Zone 3:
 	if (CurrentPlacementPosition == TopLeftCorner)
-	{
-		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
-		RNG.seed(time(NULL));
-		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_THREE_INDEX,
-			ZONE_FOURTEEN_INDEX };
-		
-		ZoneChoice = ZoneIndices[RandomChoice];
-
+	{		
+		ZoneChoice = ZONE_THREE_INDEX;
 		PlacementInCornerOrAlongEdge = true;
 	}
-	// Choose from Zones 4, 14 or 15:
+	// Zone 4:
 	else if (CurrentPlacementPosition == TopRightCorner)
 	{
-		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
-		RNG.seed(time(NULL));
-		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_FOUR_INDEX, ZONE_FOURTEEN_INDEX,
-			ZONE_FIFTHTEEN_INDEX };
-
-		ZoneChoice = ZoneIndices[RandomChoice];
-
+		ZoneChoice = ZONE_FOUR_INDEX;
 		PlacementInCornerOrAlongEdge = true;
 	}
-	// Choose from Zones 5, 15 or 16:
+	// Zone 5:
 	else if (CurrentPlacementPosition == BottomRightCorner)
 	{
-		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
-		RNG.seed(time(NULL));
-		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_FIVE_INDEX, ZONE_FIFTHTEEN_INDEX,
-			ZONE_SIXTEEN_INDEX };
-
-		ZoneChoice = ZoneIndices[RandomChoice];
-
+		ZoneChoice = ZONE_FIVE_INDEX;
 		PlacementInCornerOrAlongEdge = true;
 	}
-	// Choose from Zones 1, 6 or 16:
+	// Zone 6:
 	else if (CurrentPlacementPosition == BottomLeftCorner)
 	{
-		RandomDistribution = std::uniform_int_distribution<int>(0, 2);
-		RNG.seed(time(NULL));
-		int RandomChoice = RandomDistribution(RNG);
-		std::vector<int> ZoneIndices = { ZONE_ONE_INDEX, ZONE_SIX_INDEX,
-			ZONE_SIXTEEN_INDEX };
-
-		ZoneChoice = ZoneIndices[RandomChoice];
-
+		ZoneChoice = ZONE_SIX_INDEX;
 		PlacementInCornerOrAlongEdge = true;
 	}
 
@@ -495,53 +379,6 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			TargetEdgeColours[2] = PlacedEdgeColours[2];
 		}
 	}
-
-	/** 
-	Not nessessary in the latest version, this class will instead determine which Zone to use, based on how Edges
-	match up against each other
-	
-
-	// Get a set of Zones that match the TargetEdgeColours...
-	for (int ZoneSetIterator = 0; ZoneSetIterator < LevelZoneTiles.Num(); ZoneSetIterator++)
-	{
-		// For the Edge-colours of this current Zone in the set:
-		std::vector<FPSLevelGeneratorEdge::EdgeColour> CurrentZoneEdgeColours = LevelZoneTiles[ZoneSetIterator]->GetZoneEdgeColours();
-
-		// For validating if a tile matches up to the TargetEdgeColours:
-		bool ZoneMatchesToTargetEdgeColours = true;
-
-		// To check each EdgeColour against CurrentZoneEdgeColours:
-		for (int TargetEdgeColoursIterator = 0; TargetEdgeColoursIterator < TargetEdgeColours.size() - 1;
-			TargetEdgeColoursIterator++)
-		{
-			if (TargetEdgeColours[TargetEdgeColoursIterator] > FPSLevelGeneratorEdge::EdgeColour::Grey - 1)
-			{
-				// This CurrentEdgeColour would not match up to TargetEdgeColour, so this zone would not go
-				// in the CurrentPlacementPosition.
-				// For the mean time, grey is assumed to be colourless (so matching with any colour):
-				if (!(CurrentZoneEdgeColours[TargetEdgeColoursIterator] == TargetEdgeColours[TargetEdgeColoursIterator]) &&
-					TargetEdgeColours[TargetEdgeColoursIterator] != FPSLevelGeneratorEdge::EdgeColour::Grey)
-				{
-					ZoneMatchesToTargetEdgeColours = false;
-					break;
-				}
-			}
-		}
-
-		if (ZoneMatchesToTargetEdgeColours)
-		{
-			ZoneSubSet.Add(LevelZoneTiles[ZoneSetIterator]);
-		}
-	}
-	
-	// ...then pick one of these Zones from the sub-set:
-
-	// But if there are no Zones in the sub-set:
-	if (ZoneSubSet.Num() == 0)
-	{
-		return nullptr;
-	}
-	*/
 
 	ZoneChoice = GetZoneChoiceIndex();
 	

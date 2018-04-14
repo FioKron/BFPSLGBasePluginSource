@@ -63,7 +63,11 @@ public:
 
 	// Properties:
 
-	/** For testing how these are shown in the menu. */
+	/** 
+	* UPROPERTY macro usage here allows these properties to be edited
+	* in the details panel, that is shown when the user opens this tool,
+	* via the edit sub-menu option.
+	*/
 	UPROPERTY(EditAnywhere, Category = "Core Properties")
 	FVector2D LevelExtents;
 
@@ -164,16 +168,22 @@ private:
 	const FVector2D ZONE_POSITION_OFFSET = FVector2D(50.0f, 50.0f);
 
 	/** 
-	* To refer to the dimensions of the panels/tiles.
+	* To refer to the appropriate dimensions of the panels/tiles.
 	* Taken from the values noted in the static-mesh
 	* -editor, for Shape_Cube.
 	*/
 	const float DEFAULT_TILE_WIDTH = 100.0f;
 	const float DEFAULT_TILE_HEIGHT = 100.0f;
+
+	const float DEFAULT_TILE_Z_POSITION = 40.0f;
+
+	/** Where one panel equates to 100x100x100, for the default level extents. */
+	const FVector2D DEFAULT_LEVEL_EXTENTS = FVector2D(300.0f, 300.0f);
 	
 	/** 
 	* For the offset of the encapsulation pieces,
-	* from the level-generation area.
+	* from the level-generation area (arithmetic
+	* operations are also used on this value).
 	*/
 	const float DEFAULT_ENCAPSULATION_OFFSET = 10.0f;
 
@@ -225,33 +235,33 @@ private:
 	// Used in comparison between a Zone's Edges: 
 	
 	/** Colourless against another. */
-	const int COLOURLESS_TO_BLUE = 0;
-	const int COLOURLESS_TO_GREEN = 0;
-	const int COLOURLESS_TO_RED = 100;
+	const int COLOURLESS_TO_BLUE = 50;
+	const int COLOURLESS_TO_GREEN = 30;
+	const int COLOURLESS_TO_RED = 20;
 	const int COLOURLESS_TO_GREY = 0;
 
 	/** Blue against another. */
-	const int BLUE_TO_BLUE = 100;
-	const int BLUE_TO_GREEN = 0;
-	const int BLUE_TO_RED = 0;
+	const int BLUE_TO_BLUE = 20;
+	const int BLUE_TO_GREEN = 30;
+	const int BLUE_TO_RED = 50;
 	const int BLUE_TO_GREY = 0;
 
 	/** Green against another. */
-	const int GREEN_TO_BLUE = 0;
-	const int GREEN_TO_GREEN = 0;
-	const int GREEN_TO_RED = 100;
+	const int GREEN_TO_BLUE = 25;
+	const int GREEN_TO_GREEN = 35;
+	const int GREEN_TO_RED = 40;
 	const int GREEN_TO_GREY = 0;
 
 	/** Red against another. */
-	const int RED_TO_BLUE = 0;
-	const int RED_TO_GREEN = 0;
-	const int RED_TO_RED = 100;
+	const int RED_TO_BLUE = 50;
+	const int RED_TO_GREEN = 30;
+	const int RED_TO_RED = 20;
 	const int RED_TO_GREY = 0;
 
 	/** Grey against another. */
-	const int GREY_TO_BLUE = 0;
-	const int GREY_TO_GREEN = 0;
-	const int GREY_TO_RED = 100;
+	const int GREY_TO_BLUE = 20;
+	const int GREY_TO_GREEN = 30;
+	const int GREY_TO_RED = 50;
 	const int GREY_TO_GREY = 0;
 };
 // Previous values:
