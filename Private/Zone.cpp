@@ -184,6 +184,30 @@ void AZone::DetermineZoneEdgesColour()
 			FPSLevelGeneratorEdge::EdgeColour::Blue, FPSLevelGeneratorEdge::EdgeColour::Green,
 			FPSLevelGeneratorEdge::EdgeColour::Blue);
 	}
+	else if (Tags.Contains(WANG_TILE_NINETEEN))
+	{
+		InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour::Blue,
+			FPSLevelGeneratorEdge::EdgeColour::Red, FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (Tags.Contains(WANG_TILE_TWENTY))
+	{
+		InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Blue, FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (Tags.Contains(WANG_TILE_TWENTY_ONE))
+	{
+		InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Red, FPSLevelGeneratorEdge::EdgeColour::Blue,
+			FPSLevelGeneratorEdge::EdgeColour::Red);
+	}
+	else if (Tags.Contains(WANG_TILE_TWENTY_TWO))
+	{
+		InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Red, FPSLevelGeneratorEdge::EdgeColour::Red,
+			FPSLevelGeneratorEdge::EdgeColour::Blue);
+	}
 
 	// Make sure to set ZoneEdgeColours up correctly as well:
 	ZoneEdgeColours[0] = NorthEdge.GetEdgeColour();

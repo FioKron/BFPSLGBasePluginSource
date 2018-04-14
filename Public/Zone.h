@@ -170,6 +170,11 @@ private:
 	/** To hold all of the objects in the Zone. */
 	TArray<UStaticMeshComponent*> ZoneObjects;
 
+	// For the Coefficients used in determining Zone placement:
+	float DefensivenessCoefficient;
+	float FlankingCoefficient;
+	float DispersionCoefficient;
+
 	// Constant Values:
 
 	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
@@ -193,4 +198,8 @@ private:
 	const FName WANG_TILE_SIXTEEN = "WangTile16";
 	const FName WANG_TILE_SEVENTEEN = "WangTile17";
 	const FName WANG_TILE_EIGHTTEEN = "WangTile18";
+	const FName WANG_TILE_NINETEEN = "WangTile19";
+	const FName WANG_TILE_TWENTY = "WangTile20";
+	const FName WANG_TILE_TWENTY_ONE = "WangTile21";
+	const FName WANG_TILE_TWENTY_TWO = "WangTile22";
 };
