@@ -122,6 +122,9 @@ private:
 	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGreen(int RNGResult);
 	FPSLevelGeneratorEdge::EdgeColour MatchAgainstBlue(int RNGResult);
 
+	/** Get the Zone corresponding to the ZoneChoice. */
+	UBlueprint* GetTargetZone(int ZoneChoice);
+
 	// Properties:
 
 	/** The default scale for the panels of the level. */

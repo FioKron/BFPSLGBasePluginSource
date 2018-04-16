@@ -124,6 +124,10 @@ public:
 	/** For proper initialisation. */
 	void InitialiseZone();
 	
+	/** Determine these Coefficients, now the Zone will be placed. */
+	void DetermineDefensivenessAndFlankingCoefficients(float SurroundingZones,
+		float AdjacentZones);
+
 	// Get functions:
 
 	/** 
@@ -144,11 +148,8 @@ private:
 
 	// Functions/Methods:
 
-	/** 
-	* Check against the positions of objects in this Zone,
-	* to find the determine the colour of this Zone's Edges.
-	*/
-	void DetermineZoneEdgesColour();
+	/** Determine the initiale values of this zone. */
+	void DetermineInitialeZoneValues();
 
 	/** For setting all the edge colours. */
 	void InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour NorthEdgeColour,
@@ -176,6 +177,9 @@ private:
 	float DispersionCoefficient;
 
 	// Constant Values:
+
+	/** For calculating the Defensiveness and Flanking Coefficients of this Zone. */
+	const float HIGHEST_ZONE_DENSITY = 5.0f;
 
 	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
 

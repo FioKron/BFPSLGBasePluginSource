@@ -248,8 +248,10 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// For the index to find the target Zone, from the array of Zones:
 	int ZoneChoice = 0;
 
-	// Only set to true if one of the below conditions is true:
-	bool PlacementInCornerOrAlongEdge = false;
+	// Flags:
+
+	bool PlacementInCorner = false;
+	bool PlacementAlongEdge = false;
 
 	// Then fill it with all of the zones (these will be narrowed down to the
 	// final choice for this space, later):
@@ -270,25 +272,25 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	if (CurrentPlacementPosition == TopLeftCorner)
 	{		
 		ZoneChoice = ZONE_THREE_INDEX;
-		PlacementInCornerOrAlongEdge = true;
+		PlacementInCorner = true;
 	}
 	// Zone 4:
 	else if (CurrentPlacementPosition == TopRightCorner)
 	{
 		ZoneChoice = ZONE_FOUR_INDEX;
-		PlacementInCornerOrAlongEdge = true;
+		PlacementInCorner = true;
 	}
 	// Zone 5:
 	else if (CurrentPlacementPosition == BottomRightCorner)
 	{
 		ZoneChoice = ZONE_FIVE_INDEX;
-		PlacementInCornerOrAlongEdge = true;
+		PlacementInCorner = true;
 	}
 	// Zone 6:
 	else if (CurrentPlacementPosition == BottomLeftCorner)
 	{
 		ZoneChoice = ZONE_SIX_INDEX;
-		PlacementInCornerOrAlongEdge = true;
+		PlacementInCorner = true;
 	}
 
 	// If this Zone is to be placed against an edge of
@@ -298,7 +300,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 
 	// If this area has already been deemed to be a corner,
 	// then skip these checks:
-	if (!PlacementInCornerOrAlongEdge)
+	if (!PlacementInCorner)
 	{
 		// North level-generation area 'edge':
 		if (CurrentPlacementPosition.Y == LevelGenerationStartPoint.Y + ZONE_POSITION_OFFSET.Y)
@@ -306,7 +308,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			TargetEdgeColours[0] = FPSLevelGeneratorEdge::EdgeColour::Blue;
 			// So return from the function sooner:
 			ZoneChoice = ZONE_NINETEEN_INDEX;
-			PlacementInCornerOrAlongEdge = true;
+			PlacementAlongEdge = true;
 		}
 
 		// East level-generation area 'edge':
@@ -315,7 +317,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			TargetEdgeColours[1] = FPSLevelGeneratorEdge::EdgeColour::Blue;
 			// So return from the function sooner:
 			ZoneChoice = ZONE_TWENTY_INDEX;
-			PlacementInCornerOrAlongEdge = true;
+			PlacementAlongEdge = true;
 		}
 
 		// South level-generation area 'edge':
@@ -324,7 +326,7 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			TargetEdgeColours[2] = FPSLevelGeneratorEdge::EdgeColour::Blue;
 			// So return from the function sooner:
 			ZoneChoice = ZONE_TWENTY_ONE_INDEX;
-			PlacementInCornerOrAlongEdge = true;
+			PlacementAlongEdge = true;
 		}
 
 		// West level-generation area 'edge':
@@ -333,23 +335,26 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			TargetEdgeColours[3] = FPSLevelGeneratorEdge::EdgeColour::Blue;
 			// So return from the function sooner:
 			ZoneChoice = ZONE_TWENTY_TWO_INDEX;
-			PlacementInCornerOrAlongEdge = true;
+			PlacementAlongEdge = true;
 		}
 	}
 	
-	// A Zone will be placed in a corner or along an Edge of the level-generation area:
-	if (PlacementInCornerOrAlongEdge)
+	// A Zone will be placed in a corner or along an Edge of the level-generation area
+	// (so determine its defensive and flanking coefficients' respectivly):
+	if (PlacementInCorner)
 	{
-		// Return the Blueprint that represents this Zone:
-		for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZones.Num(); ZoneBlueprintIterator++)
-		{
-			if (ZoneSubSet[ZoneChoice]->GetName() == LevelZones[ZoneBlueprintIterator]->GetName())
-			{
-				PlacedLevelZones.Add(ZoneSubSet[ZoneChoice]);
-				return LevelZoneTileBlueprints[ZoneBlueprintIterator];
-			}
-		}
+		ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(3.0f, 2.0f);
+		return GetTargetZone(ZoneChoice);
 	}
+
+	if (PlacementAlongEdge)
+	{
+		ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(5.0f, 3.0f);
+		return GetTargetZone(ZoneChoice);
+	}
+
+	// Otherwise, there must be 4 zones adjacent to this Zone and 8 surrounding Zones:
+	ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(8.0f, 4.0f);
 
 	// Check through PlacedLevelZones, to complete TargetEdgeColours.
 	// (If any Zones have been placed):
@@ -750,4 +755,19 @@ FPSLevelGeneratorEdge::EdgeColour UBalancedFPSLevelGeneratorTool::MatchAgainstBl
 	}
 
 	return ColourResult;
+}
+
+UBlueprint* UBalancedFPSLevelGeneratorTool::GetTargetZone(int ZoneChoice)
+{
+	// Return the Blueprint that represents this Zone:
+	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZones.Num(); ZoneBlueprintIterator++)
+	{
+		if (ZoneSubSet[ZoneChoice]->GetName() == LevelZones[ZoneBlueprintIterator]->GetName())
+		{
+			PlacedLevelZones.Add(ZoneSubSet[ZoneChoice]);
+			return LevelZoneTileBlueprints[ZoneBlueprintIterator];
+		}
+	}
+
+	return nullptr;
 }
