@@ -9,84 +9,6 @@
 #include "FPSLevelGeneratorEdge.h" // For this Zone's Edges.
 #include "Zone.generated.h"
 
-/** As UFPSLevelGeneratorEdge properties were getting cleaned up. */
-USTRUCT()
-struct FPSLevelGeneratorEdge
-{
-	GENERATED_BODY()
-
-public:
-
-	// Operators:
-
-	/** To remove complaints of the '=' operator being delated. */
-	FPSLevelGeneratorEdge& FPSLevelGeneratorEdge::operator=(const FPSLevelGeneratorEdge& RightHandSide)
-	{
-
-	}
-
-	// Enumerations:
-
-	enum EdgeColour
-	{
-		Colourless,
-		Grey,
-		Red,
-		Green,
-		Blue
-	};
-
-	// Functions/Methods:
-
-	/** Default constructor (required by UE4). */
-	FPSLevelGeneratorEdge::FPSLevelGeneratorEdge()
-	{
-
-	}
-
-	// Initialisation methods:
-
-	void InitialiseEdge(FVector2D NewEdgeCentrePoint)
-	{
-		EdgeCentrePoint = NewEdgeCentrePoint;
-	}
-
-	/** EdgeColour is calculated manually for now, the result is parsed into this function. */
-	void InitialiseEdgeColour(EdgeColour NewEdgeColour)
-	{
-		ThisEdgeColour = NewEdgeColour;
-	}
-
-	// Get functions:
-	const EdgeColour GetEdgeColour()
-	{
-		return ThisEdgeColour;
-	}
-
-	// Properties:
-
-	// Constant Values:
-
-	/** For the relative centre-points of a respective edge. */
-	const FVector2D DEFAULT_NORTH_EDGE_RELATIVE_CENTRE_POINT = FVector2D(0.0f, -45.0f);
-	const FVector2D DEFAULT_EAST_EDGE_RELATIVE_CENTRE_POINT = FVector2D(45.0f, 0.0f);
-	const FVector2D DEFAULT_SOUTH_EDGE_RELATIVE_CENTRE_POINT = FVector2D(0.0f, 45.0f);
-	const FVector2D DEFAULT_WEST_EDGE_RELATIVE_CENTRE_POINT = FVector2D(-45.0f, 0.0f);
-
-private:
-
-	// Properties:
-
-	/** For the colour of this edge. */
-	EdgeColour ThisEdgeColour;
-
-	/**
-	* The centre point of this edge, used
-	* in the calculations for this Edge's density.
-	*/
-	FVector2D EdgeCentrePoint;
-};
-
 /**
  * This class represents the area of a level, that the space-filling algorithm
  * (Wang Tiles, as of 13/03/2018), will use to fix components of the level 
@@ -101,87 +23,7 @@ public:
 
 	// Properties:
 
-	/** 
-	* These represent the Edges of this zone (to be put into the ZoneEdges Array).
-	* The RF_RootSet flag is used to make sure they are not cleaned up by the 
-	* Garbage Collector.
-	*/
-	FPSLevelGeneratorEdge NorthEdge;
-	FPSLevelGeneratorEdge EastEdge;
-	FPSLevelGeneratorEdge SouthEdge;
-	FPSLevelGeneratorEdge WestEdge;
-
 	// Constant values:
-
-	/** For the default ZoneEdge properties (during initialisation). */
-	static const int DEFAULT_ZONE_EDGE_COUNT = 4;
-
-	// Functions/Methods:
-
-	/** Default constructor (required by UE4). */
-	AZone();
-
-	/** For proper initialisation. */
-	void InitialiseZone();
-	
-	/** Determine these Coefficients, now the Zone will be placed. */
-	void DetermineDefensivenessAndFlankingCoefficients(float SurroundingZones,
-		float AdjacentZones);
-
-	// Get functions:
-
-	/** 
-	* Zone Edge order:
-	* First element: North Edge.
-	* Second element: East Edge.
-	* Third element: South Edge.
-	* Fourth element: West Edge.
-	*/
-	std::vector<FPSLevelGeneratorEdge> GetZoneEdges();
-
-	std::vector<FPSLevelGeneratorEdge::EdgeColour> GetZoneEdgeColours();
-
-	//UFUNCTION(BlueprintCallable, Category = "Zone Content")
-	//TArray<UActorComponent*> GetZoneObjects();
-
-private:
-
-	// Functions/Methods:
-
-	/** Determine the initiale values of this zone. */
-	void DetermineInitialeZoneValues();
-
-	/** For setting all the edge colours. */
-	void InitialiseZoneEdgeColours(FPSLevelGeneratorEdge::EdgeColour NorthEdgeColour,
-		FPSLevelGeneratorEdge::EdgeColour EastEdgeColour,
-		FPSLevelGeneratorEdge::EdgeColour SouthEdgeColour,
-		FPSLevelGeneratorEdge::EdgeColour WestEdgeColour);
-
-	// Properties:
-
-	/** For each Edge of this Zone (4 of them by default). */
-	std::vector<FPSLevelGeneratorEdge> ZoneEdges;
-
-	/** 
-	* For the colour of this Zone's Edges.
-	* This vector is in the order noted above.
-	*/
-	std::vector<FPSLevelGeneratorEdge::EdgeColour> ZoneEdgeColours;
-
-	/** To hold all of the objects in the Zone. */
-	TArray<UStaticMeshComponent*> ZoneObjects;
-
-	// For the Coefficients used in determining Zone placement:
-	float DefensivenessCoefficient;
-	float FlankingCoefficient;
-	float DispersionCoefficient;
-
-	// Constant Values:
-
-	/** For calculating the Defensiveness and Flanking Coefficients of this Zone. */
-	const float HIGHEST_ZONE_DENSITY = 5.0f;
-
-	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
 
 	/** These values are used to idenfiy each Zone. */
 	const FName WANG_TILE_ONE = "WangTile1";
@@ -206,4 +48,69 @@ private:
 	const FName WANG_TILE_TWENTY = "WangTile20";
 	const FName WANG_TILE_TWENTY_ONE = "WangTile21";
 	const FName WANG_TILE_TWENTY_TWO = "WangTile22";
+
+	/** For the default ZoneEdge properties (during initialisation). */
+	static const int DEFAULT_ZONE_EDGE_COUNT = 4;
+
+	// Functions/Methods:
+
+	/** Default constructor (required by UE4). */
+	AZone();
+
+	/** For proper initialisation. */
+	void InitialiseZone();
+	
+	/** Determine these Coefficients, now the Zone will be placed. */
+	void DetermineDefensivenessAndFlankingCoefficients(float SurroundingZones,
+		float AdjacentZones);
+
+	// Get functions:
+
+	float GetDefensivenessCoefficient();
+	float GetFlankingCoefficient();
+	float GetDispersonCoefficient();
+
+private:
+
+	// Properties:
+
+	/** To hold all the objects in the Zone. */
+	TArray<UStaticMeshComponent*> ZoneObjects;
+
+	// For the Coefficients used in determining Zone placement:
+	float DefensivenessCoefficient;
+	float FlankingCoefficient;
+	float DispersionCoefficient;
+
+	// Constant Values:
+
+	/** For calculating the Defensiveness and Flanking Coefficients of this Zone. */
+	const float HIGHEST_ZONE_VOLUME = 5.0f;
+
+	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
+
+	// Functions/Methods:
+
+	/** Determine the initial values of this zone. */
+	void DetermineInitialZoneValues();
+
+	/** 
+	* Initialise the execution of the calculations to find the Defensiveness 
+	* Coefficient.
+	*/
+	void InitialiseDefensivenessCoefficientCalculations(std::vector<float> TouchingEdgeCount,
+		float ZoneObjectVolume, float AdjacentZones);
+
+	/** 
+	* Perform the bulk of the calculations for finding the PathDensity. 
+	* To in turn, determine the Defensiveness Coefficient.
+	*/
+	void FindNonAbsolutePathDensity(float& PathDensity, bool IsFlipFlopRequired, 
+		std::vector<float> TouchingEdgeCount, float AdjacentZones);
+
+	/** 
+	* After the non-absolute path-density value has been found, then there are just
+	* 3 more lines to determine the Defensiveness Coefficient.
+	*/
+	void FindDefensivenessCoefficient(float ZoneObjectVolume, float& PathDensity);
 };

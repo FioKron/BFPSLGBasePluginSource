@@ -10,36 +10,6 @@
 
 #include "BalancedFPSLevelGeneratorTool.generated.h"
 
-// Structures:
-
-/** For the edge-colours of all of the ZoneTiles. */
-struct ZoneTileEdgeColours
-{
-	// Properties:
-
-	std::vector<std::vector<FPSLevelGeneratorEdge::EdgeColour>> AllEdgeColours;
-
-	// Functions/Methods:
-
-	/** Standard constructor. */
-	ZoneTileEdgeColours::ZoneTileEdgeColours(int TileCount)
-	{
-		AllEdgeColours = std::vector<std::vector<FPSLevelGeneratorEdge::EdgeColour>>(TileCount);
-
-		for (int ZoneTileEdgeColoursIterator = 0; ZoneTileEdgeColoursIterator < AllEdgeColours.size();
-			ZoneTileEdgeColoursIterator++)
-		{
-			AllEdgeColours[ZoneTileEdgeColoursIterator] = std::vector<FPSLevelGeneratorEdge::EdgeColour>(size_t(AZone::DEFAULT_ZONE_EDGE_COUNT));
-		}
-	}
-
-	/** Default constructor (required by VS). */
-	ZoneTileEdgeColours::ZoneTileEdgeColours()
-	{
-
-	}
-};
-
 /**
  * This is the main class of this bundle, that handles the top-layer of level generation.
  * Functionality for certain components of this level generation, is handled by other
@@ -63,6 +33,16 @@ public:
 
 	// Properties:
 
+	// Enumerations:
+
+	enum ZoneAdjacencyDirection
+	{
+		Westwards,
+		Southwards,
+		Eastwords,
+		Northwords
+	};
+
 	/** 
 	* UPROPERTY macro usage here allows these properties to be edited
 	* in the details panel, that is shown when the user opens this tool,
@@ -70,21 +50,6 @@ public:
 	*/
 	UPROPERTY(EditAnywhere, Category = "Core Properties")
 	FVector2D LevelExtents;
-
-	UPROPERTY(EditAnywhere, Category = "Core Properties")
-	float VariationProbability;
-
-	UPROPERTY(EditAnywhere, Category = "Core Properties")
-	float RecombinationProbability;
-
-	UPROPERTY(EditAnywhere, Category = "Core Properties")
-	float MutationValue;
-
-	UPROPERTY(EditAnywhere, Category = "Core Properties")
-	float AddMutationProbability;
-
-	UPROPERTY(EditAnywhere, Category = "Core Properties")
-	float MultiplyMutationProbability;
 
 	/** For where to start generating the level from. */
 	UPROPERTY(EditDefaultsOnly, Category = "Core Properties")
@@ -100,6 +65,8 @@ private:
 	/** First, static-mesh actors are used to create the box. */
 	void EncapsulateLevelGenerationArea();
 
+	void SpawnTopOrBottomWallPanelTileForCurrentPosition(FVector PanelTilePosition, bool IsTopFaceTile);
+
 	/** Then spawn a light source, for that area. */
 	void AddLightSourceToLevelGenerationArea();
 
@@ -112,19 +79,29 @@ private:
 	/** For determining which tile to use. */
 	class UBlueprint* GetSuitableZoneTile(FVector2D CurrentPlacementPosition);
 
-	/** For getting an index of the Zone to use. */
-	int GetZoneChoiceIndex();
-
-	/** Match against Edges of a certain colour. */
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstColourless(int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGrey(int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstRed(int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstGreen(int RNGResult);
-	FPSLevelGeneratorEdge::EdgeColour MatchAgainstBlue(int RNGResult);
+	/** 
+	* This function also retrives a Zone index,
+	* but uses the Coefficients for comparison, intead
+	* of the Edge-colours.
+	*/
+	int GetZoneConsideringCoefficients(int ZoneToCompareTo, ZoneAdjacencyDirection PlacedZoneAdjacency);
 
 	/** Get the Zone corresponding to the ZoneChoice. */
 	UBlueprint* GetTargetZone(int ZoneChoice);
 
+	// Helper functions:
+
+	bool ZoneIsEdgePiece(int ConsideredZone);
+	bool ZoneIsCornerPiece(int ConsideredZone);
+	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+	bool ZoneIsWangTile2(int ConsideredZone);
+	bool ZoneIsWangTile10(int ConsideredZone);
+	void FindApplicableZoneIndices(std::vector<int>& ApplicableZoneIndices);
+	int GetApplicableZoneIndex(std::vector<int>& ApplicableZoneIndices);
+	int PickZoneConsideringAdjacencyToWangTile10Or2(
+		ZoneAdjacencyDirection PlacedZoneAdjacency, int ConsideredAdjacentZoneID);
+	
 	// Properties:
 
 	/** The default scale for the panels of the level. */
@@ -146,18 +123,31 @@ private:
 	/** For the subset of zones to pick from. */
 	TArray<AZone*> ZoneSubSet;
 
-	/** For the edge-colours of a Zone to match against. */
-	std::vector<FPSLevelGeneratorEdge::EdgeColour> TargetEdgeColours;
-
 	/** For all of the zones placed in the level (from the LevelZoneTileBlueprints set). */
 	TArray<AZone*> PlacedLevelZones;
 
-	/** For the edge-colours of all of the zones. */
-	ZoneTileEdgeColours ZonesEdgeColours;
+	/** 
+	* For the relative locations of the corners of a 
+	* level-generation area:
+	*/
+	FVector2D TopLeftCorner;
+	FVector2D TopRightCorner;
+	FVector2D BottomRightCorner;
+	FVector2D BottomLeftCorner;
+
+	/** 
+	* For determining which Zone to choose from, based on Coefficient 
+	* comparison between a given Zone and either WangTile2 or WangTile10.
+	*/
+	std::vector<int> ApplicableZoneIndicesForWangTile2;
+	std::vector<int> ApplicableZoneIndicesForWangTile10;
 
 	// Constant Values:
 
-	/** For the tag used to identify Blueprints already in the level, when it's loaded. */
+	/** 
+	* For the tag used to identify Blueprints already in the level, when it's loaded
+	* or a level has already been generated. 
+	*/
 	const FName TILE_SPAWN_BLUEPRINT_TAG = "TileSpawnBlueprint";
 	/** For a count of all of the Blueprints that represent Zones. */
 	const int TOTAL_ZONE_BLUEPRINT_COUNT = 22;
@@ -178,6 +168,10 @@ private:
 	const float DEFAULT_TILE_WIDTH = 100.0f;
 	const float DEFAULT_TILE_HEIGHT = 100.0f;
 
+	/** 
+	* This value is for which XY-plane the Wang Tiles of the level should
+	* be placed.
+	*/
 	const float DEFAULT_TILE_Z_POSITION = 40.0f;
 
 	/** Where one panel equates to 100x100x100, for the default level extents. */
@@ -189,20 +183,6 @@ private:
 	* operations are also used on this value).
 	*/
 	const float DEFAULT_ENCAPSULATION_OFFSET = 10.0f;
-
-	// For choosing from a pre-defined set of zones:
-
-	const int FIRST_OPTION = 1;
-	const int SECOND_OPTION = 2;
-	const int THIRD_OPTION = 3;
-
-	// For the relative locations of the corners of a 
-	// level-generation area:
-
-	FVector2D TopLeftCorner;
-	FVector2D TopRightCorner;
-	FVector2D BottomRightCorner;
-	FVector2D BottomLeftCorner;
 
 	// For the indices of the Zones (stored in a TArray):
 
@@ -228,73 +208,15 @@ private:
 	const int ZONE_TWENTY_INDEX = 19;
 	const int ZONE_TWENTY_ONE_INDEX = 20;
 	const int ZONE_TWENTY_TWO_INDEX = 21;
-	
-	/** 
-	* The number of edges that have to match,
-	* if there is no asbolute match.
-	*/
-	const int INCOMPLETE_MATCH_THRESHOLD = 2;
 
-	// Used in comparison between a Zone's Edges: 
-	
-	/** Colourless against another. */
-	const int COLOURLESS_TO_BLUE = 50;
-	const int COLOURLESS_TO_GREEN = 30;
-	const int COLOURLESS_TO_RED = 20;
-	const int COLOURLESS_TO_GREY = 0;
+	// Used in comparsion between coefficients:
 
-	/** Blue against another. */
-	const int BLUE_TO_BLUE = 20;
-	const int BLUE_TO_GREEN = 30;
-	const int BLUE_TO_RED = 50;
-	const int BLUE_TO_GREY = 0;
+	/** Only 1 Component in the Zone. */
+	const float PURE_EVEN_ZONE_DISPERSION = 1.0f;
 
-	/** Green against another. */
-	const int GREEN_TO_BLUE = 25;
-	const int GREEN_TO_GREEN = 35;
-	const int GREEN_TO_RED = 40;
-	const int GREEN_TO_GREY = 0;
+	/** For 2 Components in the zone. */
+	const float HALF_EVEN_ZONE_DISPERSION = 0.50f;
 
-	/** Red against another. */
-	const int RED_TO_BLUE = 50;
-	const int RED_TO_GREEN = 30;
-	const int RED_TO_RED = 20;
-	const int RED_TO_GREY = 0;
-
-	/** Grey against another. */
-	const int GREY_TO_BLUE = 20;
-	const int GREY_TO_GREEN = 30;
-	const int GREY_TO_RED = 50;
-	const int GREY_TO_GREY = 0;
+	/** For a corner piece. */
+	const float CORNER_PIECE_ZONE_DISPERSION = 0.250f;
 };
-// Previous values:
-
-/** Colourless against another. */
-//const int COLOURLESS_TO_BLUE = 5;
-//const int COLOURLESS_TO_GREEN = 10;
-//const int COLOURLESS_TO_RED = 75;
-//const int COLOURLESS_TO_GREY = 10;
-
-///** Blue against another. */
-//const int BLUE_TO_BLUE = 85;
-//const int BLUE_TO_GREEN = 5;
-//const int BLUE_TO_RED = 5;
-//const int BLUE_TO_GREY = 5;
-
-///** Green against another. */
-//const int GREEN_TO_BLUE = 5;
-//const int GREEN_TO_GREEN = 10;
-//const int GREEN_TO_RED = 75;
-//const int GREEN_TO_GREY = 10;
-
-///** Red against another. */
-//const int RED_TO_BLUE = 5;
-//const int RED_TO_GREEN = 10;
-//const int RED_TO_RED = 75;
-//const int RED_TO_GREY = 10;
-
-///** Grey against another. */
-//const int GREY_TO_BLUE = 5;
-//const int GREY_TO_GREEN = 5;
-//const int GREY_TO_RED = 85;
-//const int GREY_TO_GREY = 5;
