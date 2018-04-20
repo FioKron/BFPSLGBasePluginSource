@@ -365,6 +365,14 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		}
 	}
 
+	if (ZoneChoice == -1)
+	{
+		// Test for now:
+		ZoneChoice = GetZoneConsideringCoefficients(0,
+				ZoneAdjacencyDirection::Westwards);	
+		return GetTargetZone(ZoneChoice);
+	}
+
 	// Flow should never reach this point:
 
 	return nullptr;
@@ -391,6 +399,7 @@ int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCom
 
 		// Consider dispersion first (of the Zone already placed in the level):
 
+		/**
 		// A Zone is to be placed in an adjacent position to a corner of the level-generation area, 
 		// or an edge of the level-generation area:
 		if (ZoneIsCornerPiece(ZoneToCompareTo))
@@ -406,9 +415,9 @@ int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCom
 			FindApplicableZoneIndices(ApplicableZoneIndices);
 			return GetApplicableZoneIndex(ApplicableZoneIndices);
 		}
-
+		*/
 		// The placed Zone is WangTile2 or WangTile10:
-		if (ZoneIsWangTile2(ZoneToCompareTo))
+		if (ZoneIsWangTile2Or10(ZoneToCompareTo, true))
 		{
 			// Pick based on the adjacency of ZoneToCompareTo against a possible Zone-Index from one
 			// of the pre-defined sets of indicies, for valid tiles that can be placed next to 
@@ -416,10 +425,14 @@ int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCom
 			return PickZoneConsideringAdjacencyToWangTile10Or2(PlacedZoneAdjacency, ZoneToCompareTo);
 		}
 
-		if (ZoneIsWangTile10(ZoneToCompareTo))
+		if (ZoneIsWangTile2Or10(ZoneToCompareTo, false))
 		{
 			return PickZoneConsideringAdjacencyToWangTile10Or2(PlacedZoneAdjacency, ZoneToCompareTo);
 		}
+
+		// Otherwise, call these functions to find an applicable Zone index:
+		FindApplicableZoneIndices(ApplicableZoneIndices);
+		return GetApplicableZoneIndex(ApplicableZoneIndices);
 	}
 
 	// No Zone found:
@@ -469,14 +482,17 @@ bool UBalancedFPSLevelGeneratorTool::ZoneHasHalfEvenZoneDispersion(float Conside
 	return ConsideredZoneDispersionCoefficient == HALF_EVEN_ZONE_DISPERSION;
 }
 
-bool UBalancedFPSLevelGeneratorTool::ZoneIsWangTile2(int ConsideredZone)
+bool UBalancedFPSLevelGeneratorTool::ZoneIsWangTile2Or10(int ConsideredZone, bool CheckingForWangTile2)
 {
-	return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWO);
-}
-
-bool UBalancedFPSLevelGeneratorTool::ZoneIsWangTile10(int ConsideredZone)
-{
-	return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TEN);
+	if (CheckingForWangTile2)
+	{
+		return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWO);
+	}
+	// WangTile10:
+	else
+	{
+		return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TEN);
+	}	
 }
 
 // To find an applicable Zone for this space in the level-generation area:
@@ -533,4 +549,6 @@ int UBalancedFPSLevelGeneratorTool::PickZoneConsideringAdjacencyToWangTile10Or2(
 	default:
 		break;
 	}
+
+	return 0;
 }

@@ -95,8 +95,7 @@ private:
 	bool ZoneIsCornerPiece(int ConsideredZone);
 	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
 	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
-	bool ZoneIsWangTile2(int ConsideredZone);
-	bool ZoneIsWangTile10(int ConsideredZone);
+	bool ZoneIsWangTile2Or10(int ConsideredZone, bool CheckingForWangTile2);
 	void FindApplicableZoneIndices(std::vector<int>& ApplicableZoneIndices);
 	int GetApplicableZoneIndex(std::vector<int>& ApplicableZoneIndices);
 	int PickZoneConsideringAdjacencyToWangTile10Or2(

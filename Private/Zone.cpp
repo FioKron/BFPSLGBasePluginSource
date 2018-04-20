@@ -193,6 +193,8 @@ void AZone::InitialiseDefensivenessCoefficientCalculations(std::vector<float> To
 		FlipFlopRequired = true;
 		FindNonAbsolutePathDensity(PathDensity, FlipFlopRequired, TouchingEdgeCount, AdjacentZones);
 	}
+
+	FindDefensivenessCoefficient(ZoneObjectVolume, PathDensity);
 }
 
 // Perform the repetitive calculations first, before the next step:
