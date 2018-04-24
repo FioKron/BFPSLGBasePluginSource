@@ -19,10 +19,6 @@
 #include "random"
 #include "time.h"
 
-// For other STL Containers:
-#include <set>
-
-
 // Initialise:
 UBalancedFPSLevelGeneratorTool::UBalancedFPSLevelGeneratorTool()
 {
@@ -202,6 +198,8 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 
 			FTransform LevelZoneTransform = FTransform(ZoneRotation.Quaternion(), CurrentPosition, DEFAULT_ZONE_SCALE);
 
+			// RESOLVE ISSUES WITH THE PLACEMENT OF ZONES THAT ARE NOT CORNER OR EDGE PIECES: 
+
 			// Offset the X and Y components of the CurrentPosition:
 			LevelZoneTransform.SetComponents(LevelZoneTransform.GetRotation(), FVector(LevelZoneTransform.GetLocation().X +
 				ZONE_POSITION_OFFSET.X, LevelZoneTransform.GetLocation().Y - ZONE_POSITION_OFFSET.Y, LevelZoneTransform.GetLocation().Z),
@@ -225,6 +223,7 @@ void UBalancedFPSLevelGeneratorTool::AddZonesToLevelGenerationArea()
 	
 	// Clear up the placed level Zones for the next level generated:
 	PlacedLevelZones.Empty();
+	PlacedZonePositions.empty();
 }
 
 UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D CurrentPlacementPosition)
@@ -235,22 +234,11 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// Flags:
 
 	bool PlacementInCorner = false;
-	bool PlacementAlongEdge = false;
+	bool PlacementAlongEdge = false;	
 
-	// Then fill it with all of the zones (these will be narrowed down to the
-	// final choice for this space, later):
-	ZoneSubSet = LevelZones;
-
-	// Check to see if the function can return a value here:
-	
-	// For choosing from a particular set of Zones:
-	std::default_random_engine RNG;
-	std::uniform_int_distribution<int> RandomDistribution;
-	RNG.seed(time(NULL));
-
-	// ADD MORE COMBINATIONS!! GWAGIU*WA
-	// RESOLVE ISSUES WITH PLACEMENT OF ZONES IN THE CORNERS
-	// OF THE LEVEL GENERATION AREA!@GAWI
+	// Check to see if the function can return a value here,
+	// before checking against the placed Zones in the level
+	// -generation area:
 
 	// Zone 3:
 	if (CurrentPlacementPosition == TopLeftCorner)
@@ -321,16 +309,19 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	// (so determine its defensive and flanking coefficients' respectivly):
 	if (PlacementInCorner)
 	{
-		ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(3.0f, 2.0f);
+		LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(3.0f, 2.0f);
+		PlacedZonePositions.push_back(CurrentPlacementPosition);
 		return GetTargetZone(ZoneChoice);
 	}
 
 	if (PlacementAlongEdge)
 	{
-		ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(5.0f, 3.0f);
+		LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(5.0f, 3.0f);
+		PlacedZonePositions.push_back(CurrentPlacementPosition);
 		return GetTargetZone(ZoneChoice);
 	}
 
+	CurrentPlacementPosition.X == 1500.0f && CurrentPlacementPosition.Y == 1500.0f;
 	// Check If any Zones have been placed:
 	for (int PlacedZonesIterator = 0; PlacedZonesIterator < PlacedLevelZones.Num();
 		PlacedZonesIterator++)
@@ -342,16 +333,16 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 		}
 
 		// There is a tile to the west:
-		if (PlacedLevelZones[PlacedZonesIterator]->GetActorLocation().X ==
-			(CurrentPlacementPosition.X - DEFAULT_TILE_WIDTH + ZONE_POSITION_OFFSET.X))
+		if (PlacedZonePositions[PlacedZonesIterator].X ==
+			(CurrentPlacementPosition.X - DEFAULT_TILE_WIDTH))
 		{
 			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator,
 				ZoneAdjacencyDirection::Westwards);
 		}
 
 		// There is a tile to the south:
-		if (PlacedLevelZones[PlacedZonesIterator]->GetActorLocation().Y ==
-			(CurrentPlacementPosition.Y - DEFAULT_TILE_HEIGHT + ZONE_POSITION_OFFSET.Y))
+		if (PlacedZonePositions[PlacedZonesIterator].Y ==
+			(CurrentPlacementPosition.Y - DEFAULT_TILE_HEIGHT))
 		{
 			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator,
 				ZoneAdjacencyDirection::Southwards);
@@ -359,26 +350,29 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 
 		if (ZoneChoice != -1)
 		{
-			// Initialise Defensiveness and Flanking Coefficients here:
-			ZoneSubSet[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(8.0f, 4.0f);
+			// For a Zone that will be placed in a position that is not in a corner, or along an
+			// edge of the level-generation area:
+			LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(8.0f, 4.0f);
+			PlacedZonePositions.push_back(CurrentPlacementPosition);
 			return GetTargetZone(ZoneChoice);
 		}
 	}
 
-	if (ZoneChoice == -1)
-	{
-		// Test for now:
-		ZoneChoice = GetZoneConsideringCoefficients(0,
-				ZoneAdjacencyDirection::Westwards);	
-		return GetTargetZone(ZoneChoice);
-	}
+	//if (ZoneChoice == -1)
+	//{
+	//	// Test for now:
+	//	ZoneChoice = GetZoneConsideringCoefficients(0,
+	//			ZoneAdjacencyDirection::Westwards);	
+	//	LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(8.0f, 4.0f);
+	//	return GetTargetZone(ZoneChoice);
+	//}
 
 	// Flow should never reach this point:
 
 	return nullptr;
 }
 
-// The coefficients will be considered here, for the choice of Zone:
+// The coefficients will be considered here, for the choice of Zone to place:
 int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCompareTo, ZoneAdjacencyDirection PlacedZoneAdjacency)
 {
 	// For the Coefficients to consider:
@@ -387,52 +381,41 @@ int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCom
 	float ConsideredZoneDispersionCoefficient = PlacedLevelZones[ZoneToCompareTo]->GetDispersonCoefficient();
 
 	// Check through all of the Zones to find a suitable Zone for placement:
-	for (int ZoneIterator = 0; ZoneIterator < ZoneSubSet.Num() - 1;
+	for (int ZoneIterator = 0; ZoneIterator < LevelZones.Num() - 1;
 		ZoneIterator++)
 	{
-		// To populate with applicable Zone indices:
-		std::vector<int> ApplicableZoneIndices;
-
-		float CurrentZoneDefensivenessCoefficient = ZoneSubSet[ZoneIterator]->GetDefensivenessCoefficient();
-		float CurrentZoneFlankingCoefficient = ZoneSubSet[ZoneIterator]->GetFlankingCoefficient();
-		float CurrentZoneDispersionCoefficient = ZoneSubSet[ZoneIterator]->GetDispersonCoefficient();
-
 		// Consider dispersion first (of the Zone already placed in the level):
 
-		/**
-		// A Zone is to be placed in an adjacent position to a corner of the level-generation area, 
-		// or an edge of the level-generation area:
-		if (ZoneIsCornerPiece(ZoneToCompareTo))
-		{	
-			// Get the indices of Zones that are suitable for this space:
-			FindApplicableZoneIndices(ApplicableZoneIndices);
-			// Then choose one of these at random:
-			return GetApplicableZoneIndex(ApplicableZoneIndices);
-		}
-
-		if (ZoneIsEdgePiece(ZoneToCompareTo))
-		{
-			FindApplicableZoneIndices(ApplicableZoneIndices);
-			return GetApplicableZoneIndex(ApplicableZoneIndices);
-		}
-		*/
 		// The placed Zone is WangTile2 or WangTile10:
 		if (ZoneIsWangTile2Or10(ZoneToCompareTo, true))
 		{
 			// Pick based on the adjacency of ZoneToCompareTo against a possible Zone-Index from one
 			// of the pre-defined sets of indicies, for valid tiles that can be placed next to 
 			// WangTile2 or WangTile10:
-			return PickZoneConsideringAdjacencyToWangTile10Or2(PlacedZoneAdjacency, ZoneToCompareTo);
+			return PickZoneConsideringAdjacencyToWangTile10Or2(ZoneToCompareTo);
 		}
-
-		if (ZoneIsWangTile2Or10(ZoneToCompareTo, false))
+		else if (ZoneIsWangTile2Or10(ZoneToCompareTo, false))
 		{
-			return PickZoneConsideringAdjacencyToWangTile10Or2(PlacedZoneAdjacency, ZoneToCompareTo);
+			return PickZoneConsideringAdjacencyToWangTile10Or2(ZoneToCompareTo);
 		}
-
-		// Otherwise, call these functions to find an applicable Zone index:
-		FindApplicableZoneIndices(ApplicableZoneIndices);
-		return GetApplicableZoneIndex(ApplicableZoneIndices);
+		// Considering Defensiveness:
+		else if (PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+			ZoneToCompareTo, true))
+		{
+			FindApplicableZoneIndicesConsideringDefensiveness(true);
+		}
+		else if (PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+			ZoneToCompareTo, false))
+		{
+			FindApplicableZoneIndicesConsideringDefensiveness(false);
+		}
+		else
+		{
+			// Otherwise, find applicable Zone indices based on Dispersion:
+			FindApplicableZoneIndicesConsideringDispersion(ZoneToCompareTo);
+		}
+			
+		return GetApplicableZoneIndex(ZoneCollectionToChoose::OtherCollection);
 	}
 
 	// No Zone found:
@@ -444,9 +427,9 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetTargetZone(int ZoneChoice)
 	// Return the Blueprint that represents this Zone:
 	for (int ZoneBlueprintIterator = 0; ZoneBlueprintIterator < LevelZones.Num(); ZoneBlueprintIterator++)
 	{
-		if (ZoneSubSet[ZoneChoice]->GetName() == LevelZones[ZoneBlueprintIterator]->GetName())
+		if (LevelZones[ZoneChoice]->GetName() == LevelZones[ZoneBlueprintIterator]->GetName())
 		{
-			PlacedLevelZones.Add(ZoneSubSet[ZoneChoice]);
+			PlacedLevelZones.Add(LevelZones[ZoneChoice]);
 			return LevelZoneTileBlueprints[ZoneBlueprintIterator];
 		}
 	}
@@ -458,18 +441,18 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetTargetZone(int ZoneChoice)
 
 bool UBalancedFPSLevelGeneratorTool::ZoneIsEdgePiece(int ConsideredZone)
 {
-	return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_NINETEEN) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWENTY) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWENTY_ONE) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWENTY_TWO);
+	return LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_NINETEEN) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_TWENTY) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_TWENTY_ONE) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_TWENTY_TWO);
 }
 
 bool UBalancedFPSLevelGeneratorTool::ZoneIsCornerPiece(int ConsideredZone)
 {
-	return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_THREE) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_FOUR) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_FIVE) ||
-		ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_SIX);
+	return LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_THREE) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_FOUR) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_FIVE) ||
+		LevelZones[ConsideredZone]->ActorHasTag(LevelZones[ConsideredZone]->WANG_TILE_SIX);
 }
 
 bool UBalancedFPSLevelGeneratorTool::ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient)
@@ -484,71 +467,151 @@ bool UBalancedFPSLevelGeneratorTool::ZoneHasHalfEvenZoneDispersion(float Conside
 
 bool UBalancedFPSLevelGeneratorTool::ZoneIsWangTile2Or10(int ConsideredZone, bool CheckingForWangTile2)
 {
+	// For any index of LevelZones, to get a constant value to identify WangTile2 or WangTile10:
+	int DefaultLevelZonesIndex = 0;
+
 	if (CheckingForWangTile2)
 	{
-		return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TWO);
+		return PlacedLevelZones[ConsideredZone]->ActorHasTag(LevelZones[DefaultLevelZonesIndex]->WANG_TILE_TWO);
 	}
 	// WangTile10:
 	else
 	{
-		return ZoneSubSet[ConsideredZone]->ActorHasTag(ZoneSubSet[ConsideredZone]->WANG_TILE_TEN);
+		return PlacedLevelZones[ConsideredZone]->ActorHasTag(LevelZones[DefaultLevelZonesIndex]->WANG_TILE_TEN);
 	}	
 }
 
 // To find an applicable Zone for this space in the level-generation area:
-void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndices(std::vector<int>& ApplicableZoneIndices)
+void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndicesConsideringDispersion(int PlacedZoneIndex)
 {
 	// Choose a Zone with a lower value than this piece's Dispersion
 	// Coefficient:
-	for (int ZoneIterator = 0; ZoneIterator < ZoneSubSet.Num() - 1;
+	for (int ZoneIterator = 0; ZoneIterator < LevelZones.Num() - 1;
 		ZoneIterator++)
 	{
-		if (ZoneSubSet[ZoneIterator]->GetDispersonCoefficient() <
-			CORNER_PIECE_ZONE_DISPERSION)
+		if (LevelZones[ZoneIterator]->GetDispersonCoefficient() <
+			PlacedLevelZones[PlacedZoneIndex]->GetDispersonCoefficient())
 		{
 			ApplicableZoneIndices.push_back(ZoneIterator);
 		}
 	}
 }
 
-int UBalancedFPSLevelGeneratorTool::GetApplicableZoneIndex(std::vector<int>& ApplicableZoneIndices)
+int UBalancedFPSLevelGeneratorTool::GetApplicableZoneIndex(ZoneCollectionToChoose CollectionToConsider)
 {
-	// To Pick from an index-subset on a random basis:
+	// To Pick from the index-subset on a random basis:
 	std::default_random_engine RNG;
-	std::uniform_int_distribution<int> RandomDistribution(0,
-		ApplicableZoneIndices.size() - 1);
+	std::uniform_int_distribution<int> RandomDistribution;
 	RNG.seed(time(NULL));
 
 	// Make a call to 'flush' the stream before using it, as well as seeding it:
 	RandomDistribution(RNG);
 
-	return ApplicableZoneIndices[RandomDistribution(RNG)];
+	// Pick from the respective collection (depending on which adjacent Zone is being considered):
+	switch (CollectionToConsider)
+	{
+	case ZoneCollectionToChoose::WangTile2Collection:
+		RandomDistribution = std::uniform_int_distribution<int>(0,
+			ApplicableZoneIndicesForWangTile2.size() - 1);
+		return ApplicableZoneIndicesForWangTile2[RandomDistribution(RNG)];
+		break;
+
+	case ZoneCollectionToChoose::Wangtile10Collection:
+		RandomDistribution = std::uniform_int_distribution<int>(0,
+			ApplicableZoneIndicesForWangTile10.size() - 1);
+		return ApplicableZoneIndicesForWangTile10[RandomDistribution(RNG)];
+		break;
+	
+	// For the ApplicableZoneIndices collection:
+	case ZoneCollectionToChoose::OtherCollection:
+		RandomDistribution = std::uniform_int_distribution<int>(0,
+			ApplicableZoneIndices.size() - 1);
+		// APPLICABLE ZONES INDICES SOMETIMES HAS NO ITEMS, RESOLVE THIS!
+		return ApplicableZoneIndices[RandomDistribution(RNG)];
+		break;
+	}
+	
+	return 0;
 }
 
-int UBalancedFPSLevelGeneratorTool::PickZoneConsideringAdjacencyToWangTile10Or2(
-	ZoneAdjacencyDirection PlacedZoneAdjacency, int ConsideredAdjacentZoneID)
+int UBalancedFPSLevelGeneratorTool::PickZoneConsideringAdjacencyToWangTile10Or2(int ConsideredAdjacentZoneID)
 {
-	// Consider the adjacency:
-	switch (PlacedZoneAdjacency)
+	if (ConsideredAdjacentZoneID == 2)
 	{
-		// Same for either here (concerning the traversable direction of
-		// WangTile2 or WangTile10):
-	case ZoneAdjacencyDirection::Westwards:
-	case ZoneAdjacencyDirection::Southwards:
-		if (ConsideredAdjacentZoneID == 2)
-		{
-			return GetApplicableZoneIndex(ApplicableZoneIndicesForWangTile2);
-		}
-		// For WangTile10:
-		else
-		{
-			return GetApplicableZoneIndex(ApplicableZoneIndicesForWangTile10);
-		}
-		break;
-
-	default:
-		break;
+		return GetApplicableZoneIndex(ZoneCollectionToChoose::WangTile2Collection);
+	}
+	// For WangTile10:
+	else
+	{
+		return GetApplicableZoneIndex(ZoneCollectionToChoose::Wangtile10Collection);
 	}
 
 	return 0;
+}
+
+void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndicesConsideringDefensiveness(bool IsGreaterThanThreshold)
+{
+	// Choose a Zone with a lower or greater value than the considered piece's
+	// Defensiveness Coefficient:
+	for (int ZoneIterator = 0; ZoneIterator < LevelZones.Num() - 1;
+		ZoneIterator++)
+	{
+		// If the considered piece's Defensiveness is greater than or equal to the
+		// threshold, find a piece with a Defensiveness less than or equal to the
+		// threshold and vice versa:
+		if (IsGreaterThanThreshold)
+		{
+			if (ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+				ZoneIterator, false))
+			{
+				ApplicableZoneIndices.push_back(ZoneIterator);
+			}
+
+		}
+		// Less than or equal to the threshold:
+		else
+		{
+			if (ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+				ZoneIterator, true))
+			{
+				ApplicableZoneIndices.push_back(ZoneIterator);
+			}
+		}
+	}
+}
+
+// Boolean conditional checks:
+
+bool UBalancedFPSLevelGeneratorTool::PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck)
+{
+	if (IsGreaterThanOrEqualToCheck)
+	{
+		return PlacedLevelZones[ZoneIndexToCheckAgainstThreshold]->GetDefensivenessCoefficient() >=
+			ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD;
+	}
+	// Less than or equal to check:
+	else
+	{
+		return PlacedLevelZones[ZoneIndexToCheckAgainstThreshold]->GetDefensivenessCoefficient() <=
+			ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD;
+	}
+	
+	return false;
+}
+
+bool UBalancedFPSLevelGeneratorTool::ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck)
+{
+	if (IsGreaterThanOrEqualToCheck)
+	{
+		return LevelZones[ZoneIndexToCheckAgainstThreshold]->GetDefensivenessCoefficient() >=
+			ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD;
+	}
+	// Less than or equal to check:
+	else
+	{
+		return LevelZones[ZoneIndexToCheckAgainstThreshold]->GetDefensivenessCoefficient() <=
+			ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD;
+	}
+	
+	return false;
 }

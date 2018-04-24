@@ -147,9 +147,9 @@ void AZone::DetermineDefensivenessAndFlankingCoefficients(float SurroundingZones
 {
 	FlankingCoefficient = 1.0f - (AdjacentZones / SurroundingZones);
 	// For determining the Defensiveness Coefficient:
-	float ZoneObjectVolume = ZoneObjects.Num() / HIGHEST_ZONE_VOLUME;
+	float ZoneObjectVolume = ZoneObjects.Num() / HIGHEST_ZONE_OBJECT_COUNT;
 
-	// For finding the path density:
+	// For finding the touching edge count:
 	std::vector<float> TouchingEdgeCount;
 
 	// 7 Edges are touching 2 of the Edges that matter in this case (for 2 or 3 adjacent Zones):
@@ -177,7 +177,7 @@ void AZone::InitialiseDefensivenessCoefficientCalculations(std::vector<float> To
 	float ZoneObjectVolume, float AdjacentZones)
 {
 	// As this will be decremented, then the absolute value will be obtained from this: 
-	float PathDensity = HIGHEST_ZONE_VOLUME;
+	float PathDensity = HIGHEST_ZONE_OBJECT_COUNT;
 	// Whether to switch between the values in TouchingEdgeCount:
 	bool FlipFlopRequired = false;
 
@@ -220,12 +220,23 @@ void AZone::FindNonAbsolutePathDensity(float& PathDensity, bool IsFlipFlopRequir
 	}
 }
 
-// The last set of calculations to determine the Defensiveness Coefficient:
+// For the last set of calculations to determine the Defensiveness Coefficient:
 void AZone::FindDefensivenessCoefficient(float ZoneObjectVolume, float& PathDensity)
 {
 	// The absolute value is what matters here (for comparison):
 	PathDensity = abs(PathDensity);
-	PathDensity /= HIGHEST_ZONE_VOLUME;
+	PathDensity /= HIGHEST_ZONE_OBJECT_COUNT;
 	DefensivenessCoefficient = (ZoneObjectVolume + PathDensity) / 2.0f;
+
+	// Now take into account the area of objects in this Zone:
+	float TotalZoneObjectArea = 0.0f;
+	for (UStaticMeshComponent* CurrentZoneObject : ZoneObjects)
+	{
+		TotalZoneObjectArea += CurrentZoneObject->GetRelativeTransform().
+			GetScale3D().X * CurrentZoneObject->GetRelativeTransform().
+			GetScale3D().Y;
+	}
+
+	DefensivenessCoefficient += TotalZoneObjectArea;
 }
 

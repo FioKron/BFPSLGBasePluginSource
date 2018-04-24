@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Runtime/Engine/Classes/GameFramework/Actor.h"
 #include "UObject/NoExportTypes.h"
-#include "vector" // For misc. collections.
+#include <vector> // For misc. collections.
 #include "FPSLevelGeneratorEdge.h" // For this Zone's Edges.
 #include "Zone.generated.h"
 
@@ -85,7 +85,7 @@ private:
 	// Constant Values:
 
 	/** For calculating the Defensiveness and Flanking Coefficients of this Zone. */
-	const float HIGHEST_ZONE_VOLUME = 5.0f;
+	const float HIGHEST_ZONE_OBJECT_COUNT = 5.0f;
 
 	const FVector DEFAULT_ZONE_EXTENTS = FVector(100.0f, 100.0f, 100.0f);
 

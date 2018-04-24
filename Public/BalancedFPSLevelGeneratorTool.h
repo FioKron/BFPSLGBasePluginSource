@@ -35,12 +35,21 @@ public:
 
 	// Enumerations:
 
+	/** To check where Zone(s) are relative to the current position. */
 	enum ZoneAdjacencyDirection
 	{
 		Westwards,
 		Southwards,
 		Eastwords,
 		Northwords
+	};
+
+	/** For which collection to choose a Zone index from. */
+	enum ZoneCollectionToChoose
+	{
+		WangTile2Collection,
+		Wangtile10Collection,
+		OtherCollection
 	};
 
 	/** 
@@ -91,17 +100,37 @@ private:
 
 	// Helper functions:
 
-	bool ZoneIsEdgePiece(int ConsideredZone);
-	bool ZoneIsCornerPiece(int ConsideredZone);
+	// Considering Dispersion:
+
 	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
 	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+
+	// Checking what piece or particular Wang-Tile this Zone is:
+
+	bool ZoneIsEdgePiece(int ConsideredZone);
+	bool ZoneIsCornerPiece(int ConsideredZone);
 	bool ZoneIsWangTile2Or10(int ConsideredZone, bool CheckingForWangTile2);
-	void FindApplicableZoneIndices(std::vector<int>& ApplicableZoneIndices);
-	int GetApplicableZoneIndex(std::vector<int>& ApplicableZoneIndices);
-	int PickZoneConsideringAdjacencyToWangTile10Or2(
-		ZoneAdjacencyDirection PlacedZoneAdjacency, int ConsideredAdjacentZoneID);
 	
+	// For getting indices:
+	void FindApplicableZoneIndicesConsideringDispersion(int PlacedZoneIndex);
+	int GetApplicableZoneIndex(ZoneCollectionToChoose CollectionToConsider);
+	int PickZoneConsideringAdjacencyToWangTile10Or2(int ConsideredAdjacentZoneID);
+	void FindApplicableZoneIndicesConsideringDefensiveness(bool IsGreaterThanThreshold);
+
+	// Conditional checks:
+
+	bool PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
+	bool ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
+
 	// Properties:
+
+	/** 
+	* For populating with applicable Zone indices, after determining such,
+	* based on the Coefficients of Zones.
+	*/
+	std::vector<int> ApplicableZoneIndices;
 
 	/** The default scale for the panels of the level. */
 	FVector DefaultRelativePanelScale;
@@ -119,11 +148,11 @@ private:
 	/** For the Zone Blueprints to spawn. */
 	TArray<AZone*> LevelZones;
 
-	/** For the subset of zones to pick from. */
-	TArray<AZone*> ZoneSubSet;
-
 	/** For all of the zones placed in the level (from the LevelZoneTileBlueprints set). */
 	TArray<AZone*> PlacedLevelZones;
+
+	/** As for some reason, the position of the Zones would not match-up to their actual position. */
+	std::vector<FVector2D> PlacedZonePositions;
 
 	/** 
 	* For the relative locations of the corners of a 
@@ -169,7 +198,7 @@ private:
 
 	/** 
 	* This value is for which XY-plane the Wang Tiles of the level should
-	* be placed.
+	* be placed upon.
 	*/
 	const float DEFAULT_TILE_Z_POSITION = 40.0f;
 
@@ -208,7 +237,7 @@ private:
 	const int ZONE_TWENTY_ONE_INDEX = 20;
 	const int ZONE_TWENTY_TWO_INDEX = 21;
 
-	// Used in comparsion between coefficients:
+	// Used in comparsion between Coefficients:
 
 	/** Only 1 Component in the Zone. */
 	const float PURE_EVEN_ZONE_DISPERSION = 1.0f;
@@ -218,4 +247,7 @@ private:
 
 	/** For a corner piece. */
 	const float CORNER_PIECE_ZONE_DISPERSION = 0.250f;
+
+	/** For comparing Zone Defensiveness Coefficient Values. */
+	const float ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD = 0.80f;
 };
