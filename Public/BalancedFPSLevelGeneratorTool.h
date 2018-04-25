@@ -8,6 +8,10 @@
 // Bespoke header files:
 #include "Zone.h"
 
+// For storing misc. data:
+#include <map>
+#include <utility>
+
 #include "BalancedFPSLevelGeneratorTool.generated.h"
 
 /**
@@ -52,6 +56,39 @@ public:
 		OtherCollection
 	};
 
+	// Structures:
+
+	/** 
+	* Used in checking if there are Zones to the south and west,
+	* along with what the indices of these Zones are, if this is the
+	* case.
+	*/
+	struct ZoneToSouthAndOrWestCheck
+	{
+	public:
+
+		// Properties:
+
+		// Core struct properties:
+
+		bool IsZoneToSouth;
+		bool IsZoneToWest;
+		int ZoneToSouthAndWestIndices[2];
+
+		// Functions/Methods:
+
+		/** Standard constructor. */
+		ZoneToSouthAndOrWestCheck()
+		{
+			IsZoneToSouth = false;
+			IsZoneToWest = false;
+			for (int CurrentIndex : ZoneToSouthAndWestIndices)
+			{
+				CurrentIndex = -1;
+			}
+		}
+	};
+
 	/** 
 	* UPROPERTY macro usage here allows these properties to be edited
 	* in the details panel, that is shown when the user opens this tool,
@@ -90,20 +127,18 @@ private:
 
 	/** 
 	* This function also retrives a Zone index,
-	* but uses the Coefficients for comparison, intead
+	* but uses the Coefficients for comparison, instead
 	* of the Edge-colours.
 	*/
-	int GetZoneConsideringCoefficients(int ZoneToCompareTo, ZoneAdjacencyDirection PlacedZoneAdjacency);
+	int GetZoneConsideringCoefficients(int ZoneToCompareTo);
+
+	/** For placement of a Zone, that will have 4 Zones adjacent to it. */
+	int GetZoneConsideringCoefficientsForZonesSouthAndWestOfPosition(int ZonesToCompareTo[2]);
 
 	/** Get the Zone corresponding to the ZoneChoice. */
 	UBlueprint* GetTargetZone(int ZoneChoice);
 
 	// Helper functions:
-
-	// Considering Dispersion:
-
-	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
-	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
 
 	// Checking what piece or particular Wang-Tile this Zone is:
 
@@ -112,17 +147,28 @@ private:
 	bool ZoneIsWangTile2Or10(int ConsideredZone, bool CheckingForWangTile2);
 	
 	// For getting indices:
-	void FindApplicableZoneIndicesConsideringDispersion(int PlacedZoneIndex);
+	void FindApplicableZoneIndicesConsideringDispersion(float DispersionCoefficient);
 	int GetApplicableZoneIndex(ZoneCollectionToChoose CollectionToConsider);
 	int PickZoneConsideringAdjacencyToWangTile10Or2(int ConsideredAdjacentZoneID);
 	void FindApplicableZoneIndicesConsideringDefensiveness(bool IsGreaterThanThreshold);
 
 	// Conditional checks:
 
+	// Considering Dispersion:
+
+	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+
+	// Other conditions:
+
 	bool PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
 		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
 	bool ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
 		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
+	ZoneToSouthAndOrWestCheck ZoneToSouthAndOrWest(FVector2D CurrentPlacementPosition);
+
+	// To streamline adding to collections:
+	void AddValueToCurrentPlacedZonePositions(FVector2D PositionValue);
 
 	// Properties:
 
@@ -152,7 +198,9 @@ private:
 	TArray<AZone*> PlacedLevelZones;
 
 	/** As for some reason, the position of the Zones would not match-up to their actual position. */
-	std::vector<FVector2D> PlacedZonePositions;
+	std::map<int, FVector2D> PlacedZonePositions;
+	/** For the key's value, of PlacedZonePositions. */
+	int CurrentPlacedZonePositionsKeyValue;
 
 	/** 
 	* For the relative locations of the corners of a 
