@@ -91,7 +91,7 @@ private:
 	/** 
 	* This function also retrives a Zone index,
 	* but uses the Coefficients for comparison, intead
-	* of the Edge-colours.
+	* of the edge-colours.
 	*/
 	int GetZoneConsideringCoefficients(int ZoneToCompareTo, ZoneAdjacencyDirection PlacedZoneAdjacency);
 
@@ -99,11 +99,6 @@ private:
 	UBlueprint* GetTargetZone(int ZoneChoice);
 
 	// Helper functions:
-
-	// Considering Dispersion:
-
-	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
-	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
 
 	// Checking what piece or particular Wang-Tile this Zone is:
 
@@ -123,6 +118,11 @@ private:
 		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
 	bool ZoneSubsetDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
 		int ZoneIndexToCheckAgainstThreshold, bool IsGreaterThanOrEqualToCheck);
+
+	// Considering Dispersion:
+
+	bool ZoneHasPureEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
+	bool ZoneHasHalfEvenZoneDispersion(float ConsideredZoneDispersionCoefficient);
 
 	// Properties:
 
