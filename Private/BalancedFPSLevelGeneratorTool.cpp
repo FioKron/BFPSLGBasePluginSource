@@ -22,12 +22,8 @@
 // Initialise:
 UBalancedFPSLevelGeneratorTool::UBalancedFPSLevelGeneratorTool()
 {
-	// For non-dynamic setting of applicable Zones, for Wang Tile 2 and 10:
 	ApplicableZoneIndicesForWangTile2 = { 3, 4, 6, 7, 9, 10, 11, 14 };
 	ApplicableZoneIndicesForWangTile10 = { 4, 5, 6, 11, 12, 15, 16, 18 };
-
-	// Starting at 0:
-	CurrentPlacedZonePositionsKeyValue = 0;
 
 	WallPanelBlueprintAsset = ConstructorHelpers::FObjectFinder<UBlueprint>(
 		TEXT("Blueprint'/Game/BalancedFPSLevelGeneratorAssets/Blueprints/WallPanel.WallPanel'"))
@@ -314,20 +310,18 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	if (PlacementInCorner)
 	{
 		LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(3.0f, 2.0f);
-		AddValueToCurrentPlacedZonePositions(CurrentPlacementPosition);
+		PlacedZonePositions.push_back(CurrentPlacementPosition);
 		return GetTargetZone(ZoneChoice);
 	}
 
 	if (PlacementAlongEdge)
 	{
 		LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(5.0f, 3.0f);
-		AddValueToCurrentPlacedZonePositions(CurrentPlacementPosition);
+		PlacedZonePositions.push_back(CurrentPlacementPosition);
 		return GetTargetZone(ZoneChoice);
 	}
 
-	// To not have to check this in the following for loop:
-	ZoneToSouthAndOrWestCheck ZoneToSouthAndOrWestCheckInstance = ZoneToSouthAndOrWest(CurrentPlacementPosition);
-
+	CurrentPlacementPosition.X == 1500.0f && CurrentPlacementPosition.Y == 1500.0f;
 	// Check If any Zones have been placed:
 	for (int PlacedZonesIterator = 0; PlacedZonesIterator < PlacedLevelZones.Num();
 		PlacedZonesIterator++)
@@ -338,29 +332,28 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 			break;
 		}
 
-		// There is a Zone to the south and the west:
-		if (ZoneToSouthAndOrWestCheckInstance.IsZoneToSouth && ZoneToSouthAndOrWestCheckInstance.IsZoneToWest)
+		// There is a tile to the west:
+		if (PlacedZonePositions[PlacedZonesIterator].X ==
+			(CurrentPlacementPosition.X - DEFAULT_TILE_WIDTH))
 		{
-			ZoneChoice = GetZoneConsideringCoefficientsForZonesSouthAndWestOfPosition(ZoneToSouthAndOrWestCheckInstance.ZoneToSouthAndWestIndices);
+			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator,
+				ZoneAdjacencyDirection::Westwards);
 		}
 
-		// Only a Zone to the south:
-		if (ZoneToSouthAndOrWestCheckInstance.IsZoneToSouth)
+		// There is a tile to the south:
+		if (PlacedZonePositions[PlacedZonesIterator].Y ==
+			(CurrentPlacementPosition.Y - DEFAULT_TILE_HEIGHT))
 		{
-			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator);
+			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator,
+				ZoneAdjacencyDirection::Southwards);
 		}
-		// Only a Zone to the west:
-		else if (ZoneToSouthAndOrWestCheckInstance.IsZoneToWest)
-		{
-			ZoneChoice = GetZoneConsideringCoefficients(PlacedZonesIterator);
-		}
-		
+
 		if (ZoneChoice != -1)
 		{
 			// For a Zone that will be placed in a position that is not in a corner, or along an
 			// edge of the level-generation area:
 			LevelZones[ZoneChoice]->DetermineDefensivenessAndFlankingCoefficients(8.0f, 4.0f);
-			AddValueToCurrentPlacedZonePositions(CurrentPlacementPosition);
+			PlacedZonePositions.push_back(CurrentPlacementPosition);
 			return GetTargetZone(ZoneChoice);
 		}
 	}
@@ -379,17 +372,20 @@ UBlueprint* UBalancedFPSLevelGeneratorTool::GetSuitableZoneTile(FVector2D Curren
 	return nullptr;
 }
 
-// The coefficients will be considered here, for the choice of Zone to place (not the Edge-Colour):
-int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCompareTo)
+// The coefficients will be considered here, for the choice of Zone to place:
+int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCompareTo, ZoneAdjacencyDirection PlacedZoneAdjacency)
 {
 	// For the Coefficients to consider:
 	float ConsideredZoneDefensivenessCoefficient = PlacedLevelZones[ZoneToCompareTo]->GetDefensivenessCoefficient();
+	float ConsideredZoneFlankingCoefficient = PlacedLevelZones[ZoneToCompareTo]->GetFlankingCoefficient();
 	float ConsideredZoneDispersionCoefficient = PlacedLevelZones[ZoneToCompareTo]->GetDispersonCoefficient();
 
 	// Check through all of the Zones to find a suitable Zone for placement:
 	for (int ZoneIterator = 0; ZoneIterator < LevelZones.Num() - 1;
 		ZoneIterator++)
 	{
+		// Consider dispersion first (of the Zone already placed in the level):
+
 		// The placed Zone is WangTile2 or WangTile10:
 		if (ZoneIsWangTile2Or10(ZoneToCompareTo, true))
 		{
@@ -403,78 +399,22 @@ int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficients(int ZoneToCom
 			return PickZoneConsideringAdjacencyToWangTile10Or2(ZoneToCompareTo);
 		}
 		// Considering Defensiveness:
-		else if (ConsideredZoneDefensivenessCoefficient >= ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD)
+		else if (PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+			ZoneToCompareTo, true))
 		{
 			FindApplicableZoneIndicesConsideringDefensiveness(true);
 		}
-		else if (ConsideredZoneDefensivenessCoefficient <= ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD)
+		else if (PlacedZoneDefensivenessIsGreaterThanOrEqualToOrLessThanOrEqualToThreshold(
+			ZoneToCompareTo, false))
 		{
 			FindApplicableZoneIndicesConsideringDefensiveness(false);
 		}
 		else
 		{
 			// Otherwise, find applicable Zone indices based on Dispersion:
-			FindApplicableZoneIndicesConsideringDispersion(ConsideredZoneDispersionCoefficient);
+			FindApplicableZoneIndicesConsideringDispersion(ZoneToCompareTo);
 		}
 			
-		return GetApplicableZoneIndex(ZoneCollectionToChoose::OtherCollection);
-	}
-
-	// No Zone found:
-	return -1;
-}
-
-// Handle placement of a Zone, which will have 4 adjacent Zones:
-int UBalancedFPSLevelGeneratorTool::GetZoneConsideringCoefficientsForZonesSouthAndWestOfPosition(int ZonesToCompareTo[2])
-{
-	// For the Coefficients to consider (taking the mean-average of both values):
-	float MeanConsideredZoneDefensivenessCoefficient = (PlacedLevelZones[ZonesToCompareTo[0]]->GetDefensivenessCoefficient() +
-		PlacedLevelZones[ZonesToCompareTo[1]]->GetDefensivenessCoefficient()) / 2;
-	float MeanConsideredZoneDispersionCoefficient = (PlacedLevelZones[ZonesToCompareTo[0]]->GetDispersonCoefficient() +
-		PlacedLevelZones[ZonesToCompareTo[1]]->GetDispersonCoefficient()) / 2;
-
-	// Check through all of the Zones to find a suitable Zone for placement:
-	for (int ZoneIterator = 0; ZoneIterator < LevelZones.Num() - 1;
-		ZoneIterator++)
-	{
-		// The placed Zone is WangTile2 or WangTile10:
-		if (ZoneIsWangTile2Or10(ZonesToCompareTo[0], true))
-		{
-			// Pick based on the adjacency of ZoneToCompareTo against a possible Zone-Index from one
-			// of the pre-defined sets of indicies, for valid tiles that can be placed next to 
-			// WangTile2 or WangTile10:
-			return PickZoneConsideringAdjacencyToWangTile10Or2(ZonesToCompareTo[0]);
-		}
-		else if (ZoneIsWangTile2Or10(ZonesToCompareTo[0], false))
-		{
-			return PickZoneConsideringAdjacencyToWangTile10Or2(ZonesToCompareTo[0]);
-		}
-		else if (ZoneIsWangTile2Or10(ZonesToCompareTo[1], true))
-		{
-			// Pick based on the adjacency of ZoneToCompareTo against a possible Zone-Index from one
-			// of the pre-defined sets of indicies, for valid tiles that can be placed next to 
-			// WangTile2 or WangTile10:
-			return PickZoneConsideringAdjacencyToWangTile10Or2(ZonesToCompareTo[1]);
-		}
-		else if (ZoneIsWangTile2Or10(ZonesToCompareTo[1], false))
-		{
-			return PickZoneConsideringAdjacencyToWangTile10Or2(ZonesToCompareTo[1]);
-		}
-		// Considering Defensiveness:
-		else if (MeanConsideredZoneDefensivenessCoefficient >= ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD)
-		{
-			FindApplicableZoneIndicesConsideringDefensiveness(true);
-		}
-		else if (MeanConsideredZoneDefensivenessCoefficient <= ZONE_DEFENSIVENESS_COEFFICIENT_THRESHOLD)
-		{
-			FindApplicableZoneIndicesConsideringDefensiveness(false);
-		}
-		else
-		{
-			// Otherwise, find applicable Zone indices based on Dispersion:
-			FindApplicableZoneIndicesConsideringDispersion(MeanConsideredZoneDispersionCoefficient);
-		}
-
 		return GetApplicableZoneIndex(ZoneCollectionToChoose::OtherCollection);
 	}
 
@@ -542,7 +482,7 @@ bool UBalancedFPSLevelGeneratorTool::ZoneIsWangTile2Or10(int ConsideredZone, boo
 }
 
 // To find an applicable Zone for this space in the level-generation area:
-void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndicesConsideringDispersion(float DispersionCoefficient)
+void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndicesConsideringDispersion(int PlacedZoneIndex)
 {
 	// Choose a Zone with a lower value than this piece's Dispersion
 	// Coefficient:
@@ -550,7 +490,7 @@ void UBalancedFPSLevelGeneratorTool::FindApplicableZoneIndicesConsideringDispers
 		ZoneIterator++)
 	{
 		if (LevelZones[ZoneIterator]->GetDispersonCoefficient() <
-			DispersionCoefficient)
+			PlacedLevelZones[PlacedZoneIndex]->GetDispersonCoefficient())
 		{
 			ApplicableZoneIndices.push_back(ZoneIterator);
 		}
@@ -674,47 +614,4 @@ bool UBalancedFPSLevelGeneratorTool::ZoneSubsetDefensivenessIsGreaterThanOrEqual
 	}
 	
 	return false;
-}
-
-UBalancedFPSLevelGeneratorTool::ZoneToSouthAndOrWestCheck UBalancedFPSLevelGeneratorTool::ZoneToSouthAndOrWest(FVector2D CurrentPlacementPosition)
-{
-	// The return value (with values set in the for loop):
-	ZoneToSouthAndOrWestCheck ReturnCheckStructure = ZoneToSouthAndOrWestCheck();
-
-	for (int PlacedZonesIterator = 0; PlacedZonesIterator < PlacedLevelZones.Num();
-		PlacedZonesIterator++)
-	{
-		// There is a Zone to the south:
-		if (PlacedZonePositions[PlacedZonesIterator].Y ==
-			(CurrentPlacementPosition.Y - DEFAULT_TILE_HEIGHT))
-		{
-			ReturnCheckStructure.IsZoneToSouth = true;
-			// First item in this array is for south, with the second item being for 
-			// west of the current placement position:
-			ReturnCheckStructure.ZoneToSouthAndWestIndices[0] = PlacedZonesIterator;
-		}
-
-		// There is a Zone to the west:
-		if (PlacedZonePositions[PlacedZonesIterator].X ==
-			(CurrentPlacementPosition.X - DEFAULT_TILE_WIDTH))
-		{
-			ReturnCheckStructure.IsZoneToWest = true;
-			ReturnCheckStructure.ZoneToSouthAndWestIndices[1] = PlacedZonesIterator;
-		}
-	}
-
-	// GIVEN THE ORDER OF CHECKING ZONES IsZoneToSouthAndWest IS USALLY FALSE, AS ONLY ONE OF THE FLAGS HERE
-	// IS TRUE! RESOLVE THIS GPAG({"A
-	return ReturnCheckStructure;
-}
-
-// For adding a value to this map, and incrementing the key of the map, to track the values:
-void UBalancedFPSLevelGeneratorTool::AddValueToCurrentPlacedZonePositions(FVector2D PositionValue)
-{	
-	// Insert returns a pair of the instance pair's key and value, along with a bool, which will be false if the map
-	// already contains an element with the same key:
-	if (PlacedZonePositions.insert(std::pair<int, FVector2D>(CurrentPlacedZonePositionsKeyValue, PositionValue)).second)
-	{
-		CurrentPlacedZonePositionsKeyValue++;
-	}	
 }
